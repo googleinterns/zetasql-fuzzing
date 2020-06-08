@@ -44,6 +44,7 @@ configure_make(
     ],
     configure_env_vars = {
         "AR": "ar_wrapper",
+	"LDFLAGS": "-stdlib=libc++ -B lld -lc++ --rtlib=compiler-rt --unwindlib=libunwind",
     },
     configure_options = [
         "--disable-nls",
