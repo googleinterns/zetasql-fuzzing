@@ -44,7 +44,9 @@ configure_make(
     ],
     configure_env_vars = {
         "AR": "ar_wrapper",
-	"LDFLAGS": "-stdlib=libc++ -B lld -lc++ --rtlib=compiler-rt --unwindlib=libunwind",
+        "CFLAGS":"-fno-sanitize=address",
+        "CXXFLAGS":"-fno-sanitize=address",
+        "LDFLAGS": "-stdlib=libc++ -B lld -lc++ --rtlib=compiler-rt --unwindlib=libunwind -fno-sanitize=address",
     },
     configure_options = [
         "--disable-nls",
@@ -68,6 +70,9 @@ configure_make(
     configure_env_vars = {
         "M4": "$$EXT_BUILD_DEPS$$/m4/bin/m4",
         "CC_FOR_BUILD": "$$CC$$",
+        "CFLAGS":"-fno-sanitize=address",
+        "CXXFLAGS":"-fno-sanitize=address",
+        "LDFLAGS": "-stdlib=libc++ -B lld -lc++ --rtlib=compiler-rt --unwindlib=libunwind -fno-sanitize=address",
         "AR": "ar_wrapper",
     },
     lib_source = "@bison//:all",
@@ -93,6 +98,9 @@ configure_make(
     configure_env_vars = {
         "M4": "$$EXT_BUILD_DEPS$$/m4/bin/m4",
         "AR": "ar_wrapper",
+        "CFLAGS":"-fno-sanitize=address",
+        "CXXFLAGS":"-fno-sanitize=address",
+        "LDFLAGS": "-stdlib=libc++ -B lld -lc++ --rtlib=compiler-rt --unwindlib=libunwind -fno-sanitize=address",
     },
     lib_source = "@flex//:all",
     tools_deps = [":ar_wrapper"],
