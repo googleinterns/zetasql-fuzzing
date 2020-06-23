@@ -1,0 +1,5 @@
+bazel-out
+bazel-bin
+bazel-testlogs
+bazel-zetasql-fuzzing
+
