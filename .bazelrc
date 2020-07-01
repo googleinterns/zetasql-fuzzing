@@ -24,4 +24,4 @@ build --cxxopt="-std=c++1z"
 # Set to mute complaint for undefined environment variable 
 # when a normal build is performed. LIB_FUZZING_ENGINE is used primarily for
 # specifying fuzzing engine from OSS-Fuzz project
-common --define LIB_FUZZING_ENGINE=''
+build --define LIB_FUZZING_ENGINE=''
