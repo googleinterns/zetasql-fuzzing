@@ -22,8 +22,12 @@ load("@bazel_tools//tools/build_defs/repo:java.bzl", "java_import_external")
 
 # Followup from zetasql_deps_step_1.bzl
 load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 def _load_deps_from_step_1():
+    bazel_skylib_workspace()
+    protobuf_deps()
     rules_foreign_cc_dependencies()
 
 def zetasql_deps_step_2():
@@ -161,31 +165,6 @@ cc_proto_library(
             url = "https://github.com/google/farmhash/archive/816a4ae622e964763ca0862d9dbd19324a1eaf45.tar.gz",
             sha256 = "6560547c63e4af82b0f202cb710ceabb3f21347a4b996db565a411da5b17aba0",
             strip_prefix = "farmhash-816a4ae622e964763ca0862d9dbd19324a1eaf45",
-        )
-
-    # required by protobuf_python
-    if not native.existing_rule("six_archive"):
-        http_archive(
-            name = "six_archive",
-            build_file = "@com_google_protobuf//:six.BUILD",
-            # Release 1.10.0
-            url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz",
-            sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
-        )
-
-    native.bind(
-        name = "six",
-        actual = "@six_archive//:six",
-    )
-
-    # Protobuf
-    if not native.existing_rule("com_google_protobuf"):
-        http_archive(
-            name = "com_google_protobuf",
-            urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.6.1.3.tar.gz"],
-            sha256 = "73fdad358857e120fd0fa19e071a96e15c0f23bb25f85d3f7009abfd4f264a2a",
-            strip_prefix = "protobuf-3.6.1.3",
-            patches = ["@com_google_zetasql//bazel:protobuf-v3.6.1.3.patch"],
         )
 
     # Required by gRPC
@@ -789,3 +768,11 @@ java_library(
         urls = ["https://github.com/unicode-org/icu/releases/download/release-65-1/icu4c-65_1-src.tgz"],
         patches = ["@com_google_zetasql//bazel:icu4c-64_2.patch"],
     )
+
+    if not native.existing_rule("libprotobuf_mutator"):
+        http_archive(
+            name = "libprotobuf_mutator",
+            build_file = '@com_google_zetasql//:third_party/envoy/libprotobuf_mutator.BUILD',
+            strip_prefix = "libprotobuf-mutator-master",
+            urls = ["https://github.com/google/libprotobuf-mutator/archive/master.tar.gz"],
+        )

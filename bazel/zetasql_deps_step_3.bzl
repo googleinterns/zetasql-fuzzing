@@ -18,7 +18,10 @@
 
 load("@google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 
 def zetasql_deps_step_3():
     google_common_workspace_rules()
     grpc_deps()
+    rules_proto_dependencies()
+    rules_proto_toolchains()

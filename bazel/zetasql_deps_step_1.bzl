@@ -35,3 +35,22 @@ def zetasql_deps_step_1():
             ],
             sha256 = "219bc7280bbb9305938d76067c816954ad2cc0629063412e8b765e9bc6972304",
         )
+
+    if not native.existing_rule("bazel_skylib"):
+        http_archive(
+            name = "bazel_skylib",
+            urls = [
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+            ],
+            sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+        )
+
+    # Protobuf
+    if not native.existing_rule("com_google_protobuf"):
+        http_archive(
+            name = "com_google_protobuf",
+            urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.12.3.tar.gz"],
+            sha256 = "71030a04aedf9f612d2991c1c552317038c3c5a2b578ac4745267a45e7037c29",
+            strip_prefix = "protobuf-3.12.3",
+        )
