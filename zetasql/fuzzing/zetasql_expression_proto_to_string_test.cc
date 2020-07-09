@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include <memory>
 #include <string>
 
 #include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
@@ -157,7 +158,7 @@ TEST(ProtoToStringTest, CompoundExprTest) {
   expr.mutable_expr()->mutable_multiplicative()
     ->mutable_lhs()->mutable_literal()->set_string_literal("tEsT");
 
-  Expression* subexpr = new Expression;
+  auto subexpr = std::make_unique<Expression>();
   subexpr->mutable_expr()->mutable_additive()
     ->set_operator_(AdditiveOperation::MINUS);
   subexpr->mutable_expr()->mutable_additive()
@@ -168,7 +169,7 @@ TEST(ProtoToStringTest, CompoundExprTest) {
     ->set_int32_literal(google::protobuf::kint32min);
 
   expr.mutable_expr()->mutable_multiplicative()
-    ->set_allocated_rhs(subexpr);
+    ->set_allocated_rhs(subexpr.release()); 
   EXPECT_STREQ(ExpressionToString(expr).c_str(), "tEsT * 18446744073709551615 - -2147483648");
 }
 
