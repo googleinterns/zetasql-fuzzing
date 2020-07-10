@@ -21,156 +21,160 @@
 #include "zetasql/fuzzing/zetasql_expression_proto_to_string.h"
 #include "gtest/gtest.h"
 
-using namespace zetasql_expression_grammar;
+using zetasql_expression_grammar::Expression;
 
 namespace zetasql_fuzzer {
+namespace {
 
 TEST(ProtoToStringTest, UninitializedOneOfExprTest) {
   Expression expr;
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
 
   expr.mutable_literal();
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
 
   expr.mutable_literal()->mutable_integer_literal();
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
 
   expr.mutable_expr();
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
 }
 
 TEST(ProtoToStringTest, SpecialLiteralTest) {
+  using SpecialVal = zetasql_expression_grammar::LiteralExpr_SpecialValue;
   Expression expr;
   expr.mutable_literal()
-    ->set_special_literal(LiteralExpr_SpecialValue_V_NULL);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "NULL");
+    ->set_special_literal(SpecialVal::LiteralExpr_SpecialValue_V_NULL);
+  EXPECT_EQ(ExpressionToString(expr), "NULL");
 }
 
 TEST(ProtoToStringTest, BooleanLiteralTest) {
   Expression expr;
   expr.mutable_literal()
     ->set_bool_literal(true);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "TRUE");
+  EXPECT_EQ(ExpressionToString(expr), "TRUE");
 
   expr.mutable_literal()
     ->set_bool_literal(false);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "FALSE");
+  EXPECT_EQ(ExpressionToString(expr), "FALSE");
 }
 
 TEST(ProtoToStringTest, StringLiteralTest) {
   Expression expr;
   expr.mutable_literal()->mutable_string_literal();
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "");
+  EXPECT_EQ(ExpressionToString(expr), "");
 
   expr.mutable_literal()
     ->set_string_literal("TeSt");
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "TeSt");
+  EXPECT_EQ(ExpressionToString(expr), "TeSt");
 
   expr.mutable_literal()
     ->set_string_literal("");
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "");
+  EXPECT_EQ(ExpressionToString(expr), "");
 }
 
 TEST(ProtoToStringTest, BytesLiteralTest) {
   Expression expr;
   expr.mutable_literal()->mutable_bytes_literal();
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "");
+  EXPECT_EQ(ExpressionToString(expr), "");
 
   expr.mutable_literal()
     ->set_bytes_literal("TeSt");
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "TeSt");
+  EXPECT_EQ(ExpressionToString(expr), "TeSt");
 
   expr.mutable_literal()
     ->set_string_literal("\x01\x02");
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "\x01\x02");
+  EXPECT_EQ(ExpressionToString(expr), "\x01\x02");
 }
 
 TEST(ProtoToStringTest, IntegerLiteralTest) {
   Expression expr;
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int32_literal(1);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "1");
+  EXPECT_EQ(ExpressionToString(expr), "1");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int32_literal(0);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int32_literal(google::protobuf::kint32max);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "2147483647");
+EXPECT_EQ(ExpressionToString(expr), "2147483647");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int32_literal(google::protobuf::kint32min);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "-2147483648");
+  EXPECT_EQ(ExpressionToString(expr), "-2147483648");
 
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint32_literal(1);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "1");
+  EXPECT_EQ(ExpressionToString(expr), "1");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint32_literal(0);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint32_literal(google::protobuf::kuint32max);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "4294967295");
+  EXPECT_EQ(ExpressionToString(expr), "4294967295");
 
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int64_literal(1);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "1");
+  EXPECT_EQ(ExpressionToString(expr), "1");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int64_literal(0);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int64_literal(google::protobuf::kint64max);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "9223372036854775807");
+  EXPECT_EQ(ExpressionToString(expr), "9223372036854775807");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_int64_literal(google::protobuf::kint64min);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "-9223372036854775808");
+  EXPECT_EQ(ExpressionToString(expr), "-9223372036854775808");
 
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint64_literal(1);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "1");
+  EXPECT_EQ(ExpressionToString(expr), "1");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint64_literal(0);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "0");
+  EXPECT_EQ(ExpressionToString(expr), "0");
   expr.mutable_literal()->mutable_integer_literal()
     ->set_uint64_literal(google::protobuf::kuint64max);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "18446744073709551615");
+  EXPECT_EQ(ExpressionToString(expr), "18446744073709551615");
 }
 
 TEST(ProtoToStringTest, NumericLiteralTest) {
   Expression expr;
   expr.mutable_literal()->mutable_numeric_literal()
     ->set_value("\xff\xff\xff\xff");
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "\xff\xff\xff\xff");
+  EXPECT_EQ(ExpressionToString(expr), "\xff\xff\xff\xff");
 }
 
 TEST(ProtoToStringTest, CompoundExprTest) {
+  using zetasql_expression_grammar::BinaryOperation;
   Expression expr;
-  expr.mutable_expr()->mutable_additive()
-    ->set_operator_(AdditiveOperation::PLUS);
-  expr.mutable_expr()->mutable_additive()
+  expr.mutable_expr()->mutable_binary_operation()
+    ->set_op(BinaryOperation::PLUS);
+  expr.mutable_expr()->mutable_binary_operation()
     ->mutable_lhs()->mutable_literal()->mutable_integer_literal()
     ->set_uint32_literal(1);
-  expr.mutable_expr()->mutable_additive()
+  expr.mutable_expr()->mutable_binary_operation()
     ->mutable_rhs()->mutable_literal()->mutable_integer_literal()
     ->set_uint32_literal(1);
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "1 + 1");
+  EXPECT_EQ(ExpressionToString(expr), "1 + 1");
 
-  expr.mutable_expr()->mutable_multiplicative()
-    ->set_operator_(MultiplicativeOperation::MULTIPLY);
-  expr.mutable_expr()->mutable_multiplicative()
+  expr.mutable_expr()->mutable_binary_operation()
+    ->set_op(BinaryOperation::MULTIPLY);
+  expr.mutable_expr()->mutable_binary_operation()
     ->mutable_lhs()->mutable_literal()->set_string_literal("tEsT");
 
   auto subexpr = std::make_unique<Expression>();
-  subexpr->mutable_expr()->mutable_additive()
-    ->set_operator_(AdditiveOperation::MINUS);
-  subexpr->mutable_expr()->mutable_additive()
+  subexpr->mutable_expr()->mutable_binary_operation()
+    ->set_op(BinaryOperation::MINUS);
+  subexpr->mutable_expr()->mutable_binary_operation()
     ->mutable_lhs()->mutable_literal()->mutable_integer_literal()
     ->set_uint64_literal(google::protobuf::kuint64max);
-  subexpr->mutable_expr()->mutable_additive()
+  subexpr->mutable_expr()->mutable_binary_operation()
     ->mutable_rhs()->mutable_literal()->mutable_integer_literal()
     ->set_int32_literal(google::protobuf::kint32min);
 
-  expr.mutable_expr()->mutable_multiplicative()
+  expr.mutable_expr()->mutable_binary_operation()
     ->set_allocated_rhs(subexpr.release()); 
-  EXPECT_STREQ(ExpressionToString(expr).c_str(), "tEsT * 18446744073709551615 - -2147483648");
+  EXPECT_EQ(ExpressionToString(expr), "tEsT * 18446744073709551615 - -2147483648");
 }
 
-} // zetasql_fuzzer
+}  // namespace
+}  // namespace zetasql_fuzzer

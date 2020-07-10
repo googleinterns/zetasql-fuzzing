@@ -55,27 +55,18 @@ message NumericLiteral {
 
 message CompoundExpr {
     oneof compound_oneof {
-        AdditiveOperation additive = 1;
-        MultiplicativeOperation multiplicative = 2;
+        BinaryOperation binary_operation = 1;
     }
 }
 
-message AdditiveOperation {
-    enum Op {
-        PLUS = 1;
-        MINUS = 2;
+message BinaryOperation {
+    enum Operator {
+        PLUS = 0;
+        MINUS = 1;
+        MULTIPLY = 2;
+        DIVIDE = 3;
     }
-    required Op operator = 1;
-    required Expression lhs = 2;
-    required Expression rhs = 3;
-}
-
-message MultiplicativeOperation {
-    enum Op {
-        MULTIPLY = 1;
-        DIVIDE = 2;
-    }
-    required Op operator = 1;
+    required Operator op = 1;
     required Expression lhs = 2;
     required Expression rhs = 3;
 }

@@ -17,15 +17,14 @@
 #ifndef ZETASQL_FUZZING_ZETASQL_EXPRESSION_PROTO_TO_STRING_H_
 #define ZETASQL_FUZZING_ZETASQL_EXPRESSION_PROTO_TO_STRING_H_
 
-#include "zetasql/fuzzing/common.h"
 #include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
 
-using namespace zetasql_expression_grammar;
+using zetasql_expression_grammar::Expression;
 
 namespace zetasql_fuzzer {
 
-CONV_FN(Expression, expr);
+std::string ExpressionToString(const Expression& expr);
 
-} //name space zetasql_fuzzer
+}  // namespace zetasql_fuzzer
 
-#endif
+#endif  // ZETASQL_FUZZING_ZETASQL_EXPRESSION_PROTO_TO_STRING_H_

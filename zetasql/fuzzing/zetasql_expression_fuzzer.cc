@@ -14,15 +14,13 @@
 // limitations under the License.
 //
 
-#include <iostream>
-
 #include "libprotobuf_mutator/src/libfuzzer/libfuzzer_macro.h"
 #include "zetasql/public/evaluator.h"
 #include "zetasql/fuzzing/oss_fuzz.h"
 #include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
 #include "zetasql/fuzzing/zetasql_expression_proto_to_string.h"
 
-using namespace zetasql_expression_grammar;
+using zetasql_expression_grammar::Expression;
 
 DEFINE_PROTO_FUZZER(const Expression& expression) {
     #ifdef __OSS_FUZZ__
@@ -35,4 +33,5 @@ DEFINE_PROTO_FUZZER(const Expression& expression) {
     std::string sqlExp = zetasql_fuzzer::ExpressionToString(expression);
     zetasql::PreparedExpression zetasqlExpression(sqlExp);
     zetasqlExpression.Execute(); // Value ignored
+    std::cout << sqlExp << std::endl;
 }

@@ -40,6 +40,6 @@ bool DoOssFuzzInit() {
   return true;
 }
 
-}
+}  // namespace zetasql_fuzzer
 
-#endif // ZETASQL_FUZZING_OSS_FUZZ_H_
+#endif  // ZETASQL_FUZZING_OSS_FUZZ_H_

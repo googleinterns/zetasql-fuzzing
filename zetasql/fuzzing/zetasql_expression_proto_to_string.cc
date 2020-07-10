@@ -16,29 +16,44 @@
 
 #include <string>
 
-#include "zetasql/fuzzing/common.h"
 #include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
 
-using namespace zetasql_expression_grammar;
+using zetasql_expression_grammar::Expression;
+using zetasql_expression_grammar::LiteralExpr;
+using zetasql_expression_grammar::IntegerLiteral;
+using zetasql_expression_grammar::NumericLiteral;
+using zetasql_expression_grammar::CompoundExpr;
+using zetasql_expression_grammar::BinaryOperation;
+
+#define TO_STRING(TYPE, VAR_NAME) std::string TYPE##ToString(const TYPE& VAR_NAME)
 
 namespace zetasql_fuzzer {
 
-std::string HandleDefault() {
+// Forward declaration
+TO_STRING(Expression, expr);
+
+TO_STRING(LiteralExpr, lit_expr);
+TO_STRING(IntegerLiteral, integer);
+TO_STRING(NumericLiteral, numeric);
+
+TO_STRING(CompoundExpr, comp_expr);
+TO_STRING(BinaryOperation, operation);
+
+inline void HandleUndefined(const std::string& error) {
+  std::cerr << error << std::endl;
+  std::abort();
+}
+
+inline std::string HandleDefault() {
   return "0";
 }
 
-// Forward declaration
-CONV_FN(Expression, expr);
+inline std::string Padded(const std::string& s) {
+  return " " + s + " ";
+}
 
-CONV_FN(LiteralExpr, lit_expr);
-CONV_FN(IntegerLiteral, integer);
-CONV_FN(NumericLiteral, numeric);
 
-CONV_FN(CompoundExpr, comp_expr);
-CONV_FN(AdditiveOperation, additive);
-CONV_FN(MultiplicativeOperation, multiplicative);
-
-CONV_FN(Expression, expr) {
+TO_STRING(Expression, expr) {
   using ExprType = Expression::ExprOneofCase;
   switch (expr.expr_oneof_case()) {
     case ExprType::kLiteral:
@@ -50,16 +65,15 @@ CONV_FN(Expression, expr) {
   }
 }
 
-CONV_FN(LiteralExpr, literal) {
+TO_STRING(LiteralExpr, literal) {
   using LitExprType = LiteralExpr::LiteralOneofCase;
-  std::string ret;
   switch (literal.literal_oneof_case()) {
     case LitExprType::kSpecialLiteral:
       switch (literal.special_literal()) {
         case LiteralExpr::V_NULL:
           return "NULL";
         default:
-          std::abort();
+          HandleUndefined("Undefined Special Literal");
       }
     case LitExprType::kBoolLiteral:
       return literal.bool_literal() ? "TRUE" : "FALSE";
@@ -76,7 +90,7 @@ CONV_FN(LiteralExpr, literal) {
   }
 }
 
-CONV_FN(IntegerLiteral, integer) {
+TO_STRING(IntegerLiteral, integer) {
   using IntergerType = IntegerLiteral::IntegerOneofCase;
   using std::to_string;
   switch (integer.integer_oneof_case()) {
@@ -93,40 +107,40 @@ CONV_FN(IntegerLiteral, integer) {
   }
 }
 
-CONV_FN(NumericLiteral, numeric) {
+TO_STRING(NumericLiteral, numeric) {
   return numeric.value();
 };
 
-CONV_FN(CompoundExpr, comp_expr) {
+TO_STRING(CompoundExpr, comp_expr) {
   using CompoundExprType = CompoundExpr::CompoundOneofCase;
   switch (comp_expr.compound_oneof_case()) {
-    case CompoundExprType::kAdditive:
-      return AdditiveOperationToString(comp_expr.additive());
-    case CompoundExprType::kMultiplicative:
-      return MultiplicativeOperationToString(comp_expr.multiplicative());
+    case CompoundExprType::kBinaryOperation:
+      return BinaryOperationToString(comp_expr.binary_operation());
     default:
       return HandleDefault();
   }
 };
 
-CONV_FN(AdditiveOperation, additive) {
-  std::string op;
-  if (additive.operator_() == AdditiveOperation::PLUS) {
-    op = " + ";
-  } else { // if additive.operator_() == AdditiveOperation::MINUS
-    op = " - ";
+inline std::string GetBinaryOperator(zetasql_expression_grammar::BinaryOperation_Operator op) {
+  switch (op) {
+  case BinaryOperation::PLUS:
+    return "+";
+  case BinaryOperation::MINUS:
+    return "-";
+  case BinaryOperation::MULTIPLY:
+    return "*";
+  case BinaryOperation::DIVIDE:
+    return "/";
+  default:
+    HandleUndefined("Undefined Binary Operator");
   }
-  return ExpressionToString(additive.lhs()) + op + ExpressionToString(additive.rhs());
 }
 
-CONV_FN(MultiplicativeOperation, multiplicative) {
-  std::string op;
-  if (multiplicative.operator_() == MultiplicativeOperation::MULTIPLY) {
-    op = " * ";
-  } else { // if multiplicative.operator_() == AdditiveOperation::DIVIDE
-    op = " / ";
-  }
-  return ExpressionToString(multiplicative.lhs()) + op + ExpressionToString(multiplicative.rhs());
+TO_STRING(BinaryOperation, binary_operation) {
+  std::string operator_str = GetBinaryOperator(binary_operation.op());
+  return ExpressionToString(binary_operation.lhs()) + 
+          Padded(operator_str) + 
+          ExpressionToString(binary_operation.rhs());
 }
 
-} //name space zetasql_fuzzer
+}  //name space zetasql_fuzzer

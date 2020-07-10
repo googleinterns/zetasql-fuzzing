@@ -62,7 +62,6 @@ cc_library(
     hdrs = [ "zetasql_expression_proto_to_string.h" ],
     deps = [
         ":zetasql_expression_cc_proto",
-        ":common",
     ]
 )
 
@@ -74,11 +73,6 @@ cc_test(
         ":zetasql_expression_proto_to_string",
         "@com_google_googletest//:gtest_main",
     ],
-)
-
-cc_library(
-    name = "common",
-    hdrs = [ "common.h" ],
 )
 
 cc_proto_library(
