@@ -13,7 +13,6 @@ cc_library(
         exclude = ["**/*_test.cc"],
     ),
     copts = ["-fno-sanitize=all"],
-    linkopts = ["-fno-sanitize=all"],
     hdrs = ["src/libfuzzer/libfuzzer_macro.h"],
     include_prefix = "libprotobuf_mutator",
     includes = ["."],
