@@ -61,6 +61,7 @@ class ProtoExprExtractor {
   inline void Append(const absl::AlphaNum& value) {
     absl::StrAppend(&builder, value);
   }
+  inline void Quote(const std::string& content, const std::string& quote);
 };
 
 }  // namespace zetasql_fuzzer

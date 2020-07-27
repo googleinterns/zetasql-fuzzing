@@ -92,20 +92,37 @@ TEST_F(ProtoExprExtractorTest, SpecialLiteralTest) {
   EXPECT_EQ(extractor.Release(), "NULL");
 }
 
+TEST_F(ProtoExprExtractorTest, StringLiteralTest) {
+  LiteralExpr str_expr;
+  ProtoExprExtractor extractor;
+
+  str_expr.set_string_literal("");
+  extractor.Extract(str_expr);
+  EXPECT_EQ(extractor.Release(), "\"\"");
+
+  str_expr.set_string_literal("tEsT");
+  extractor.Extract(str_expr);
+  EXPECT_EQ(extractor.Release(), "\"tEsT\"");
+}
+
 TEST_F(ProtoExprExtractorTest, BytesLiteralTest) {
   LiteralExpr lit_expr;
   ProtoExprExtractor extractor;
   lit_expr.mutable_bytes_literal();
   extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "");
+  EXPECT_EQ(extractor.Release(), "B\"\"");
+
+  lit_expr.set_bytes_literal("");
+  extractor.Extract(lit_expr);
+  EXPECT_EQ(extractor.Release(), "B\"\"");
 
   lit_expr.set_bytes_literal("TeSt");
   extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "TeSt");
+  EXPECT_EQ(extractor.Release(), "B\"TeSt\"");
 
-  lit_expr.set_string_literal("\x01\x02");
+  lit_expr.set_bytes_literal("\x01\x02");
   extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "\x01\x02");
+  EXPECT_EQ(extractor.Release(), "B\"\x01\x02\"");
 }
 
 TEST_F(ProtoExprExtractorTest, IntegerLiteralTest) {
@@ -163,7 +180,7 @@ TEST_F(ProtoExprExtractorTest, NumericLiteralTest) {
   ProtoExprExtractor extractor;
   num_expr.set_value("\xff\xff\xff\xff");
   extractor.Extract(num_expr);
-  EXPECT_EQ(extractor.Release(), "\xff\xff\xff\xff");
+  EXPECT_EQ(extractor.Release(), "NUMERIC '\xff\xff\xff\xff'");
 }
 
 TEST_F(ProtoExprExtractorTest, WhitespaceExprTest) {
@@ -229,7 +246,7 @@ TEST_F(ProtoExprExtractorTest, CompoundExprTest) {
   expr.mutable_expr()->mutable_binary_operation()
     ->set_allocated_rhs(subexpr.release()); 
   extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "tEsT * 18446744073709551615 - -2147483648");
+  EXPECT_EQ(extractor.Release(), "\"tEsT\" * 18446744073709551615 - -2147483648");
 }
 
 TEST_F(ProtoExprExtractorTest, IncrementalTest) {
@@ -242,7 +259,7 @@ TEST_F(ProtoExprExtractorTest, IncrementalTest) {
   NumericLiteral num_expr;
   num_expr.set_value("asdfas");
   extractor.Extract(num_expr);
-  EXPECT_EQ(extractor.Release(), "1asdfas");
+  EXPECT_EQ(extractor.Release(), "1NUMERIC 'asdfas'");
 }
 
 TEST_F(ProtoExprExtractorTest, ParenthesesTest) {
@@ -252,15 +269,15 @@ TEST_F(ProtoExprExtractorTest, ParenthesesTest) {
   expr.mutable_literal()->mutable_numeric_literal()->set_value("asdf");
   expr.set_parenthesized(true);
   extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "(asdf)");
+  EXPECT_EQ(extractor.Release(), "(NUMERIC 'asdf')");
 
   expr.mutable_leading_pad()->set_space(Whitespace::SPACE);
   extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "( asdf)");
+  EXPECT_EQ(extractor.Release(), "( NUMERIC 'asdf')");
 
   expr.mutable_trailing_pad()->set_space(Whitespace::NEWLINE);
   extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "( asdf\n)");
+  EXPECT_EQ(extractor.Release(), "( NUMERIC 'asdf'\n)");
 }
 
 }  // namespace

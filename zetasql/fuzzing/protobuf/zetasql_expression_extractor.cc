@@ -20,6 +20,12 @@
 
 namespace zetasql_fuzzer {
 
+inline void ProtoExprExtractor::Quote(const std::string& content, const std::string& quote) {
+  Append(quote);
+  Append(content);
+  Append(quote);
+}
+
 std::string ProtoExprExtractor::Release() {
   std::string released(std::move(builder));
   builder.clear();
@@ -68,9 +74,10 @@ void ProtoExprExtractor::Extract(const LiteralExpr& literal) {
     case LitExprType::kBoolLiteral:
       return Append(literal.bool_literal() ? "TRUE" : "FALSE");
     case LitExprType::kBytesLiteral:
-      return Append(literal.bytes_literal());
+      Append("B");
+      return Quote(literal.bytes_literal(), "\"");
     case LitExprType::kStringLiteral:
-      return Append(literal.string_literal());
+      return Quote(literal.string_literal(), "\"");
     case LitExprType::kIntegerLiteral:
       return Extract(literal.integer_literal());
     case LitExprType::kNumericLiteral:
@@ -97,7 +104,8 @@ void ProtoExprExtractor::Extract(const IntegerLiteral& integer) {
 }
 
 void ProtoExprExtractor::Extract(const NumericLiteral& numeric) {
-  return Append(numeric.value());
+  Append("NUMERIC ");
+  return Quote(numeric.value(), "'");
 }
 
 void ProtoExprExtractor::Extract(const CompoundExpr& comp_expr) {
