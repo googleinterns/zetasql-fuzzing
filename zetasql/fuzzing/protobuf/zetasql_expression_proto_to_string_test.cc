@@ -17,8 +17,8 @@
 #include <memory>
 #include <string>
 
-#include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/zetasql_expression_proto_to_string.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_proto_to_string.h"
 #include "gtest/gtest.h"
 
 using zetasql_expression_grammar::Expression;

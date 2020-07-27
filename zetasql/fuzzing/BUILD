@@ -21,7 +21,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("//bazel:fuzzing.bzl", "cc_fuzzer", "cc_proto_fuzzer")
 
 package(
-    default_visibility = ["//:__subpackages__"],
+    default_visibility = ["//zetasql/fuzzing:__subpackages__"],
 )
 
 cc_library(
@@ -40,37 +40,7 @@ cc_proto_fuzzer(
     srcs = [ "zetasql_expression_fuzzer.cc", ],
     additional_deps = [
         "//zetasql/public:evaluator",
-        ":zetasql_expression_cc_proto",
-        ":zetasql_expression_proto_to_string",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_proto_to_string",
     ],
-)
-
-cc_test(
-    name = "zetasql_expression_proto_to_string_test",
-    srcs = ["zetasql_expression_proto_to_string_test.cc"],
-    deps = [
-        ":zetasql_expression_cc_proto",
-        ":zetasql_expression_proto_to_string",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "zetasql_expression_proto_to_string",
-    srcs = [ "zetasql_expression_proto_to_string.cc", ],
-    hdrs = [ "zetasql_expression_proto_to_string.h" ],
-    deps = [
-        ":zetasql_expression_cc_proto",
-        "@com_google_absl//absl/strings",
-    ]
-)
-
-cc_proto_library(
-    name = "zetasql_expression_cc_proto",
-    deps = [ ":zetasql_expression_proto", ],
-)
-
-proto_library(
-    name = "zetasql_expression_proto",
-    srcs = [ "zetasql_expression_grammar.proto", ]
 )

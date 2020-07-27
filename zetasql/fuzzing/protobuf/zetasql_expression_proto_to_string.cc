@@ -17,7 +17,7 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
-#include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 using zetasql_expression_grammar::Expression;
 using zetasql_expression_grammar::LiteralExpr;
