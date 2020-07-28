@@ -22,25 +22,17 @@
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 #include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
 
-using zetasql_expression_grammar::Expression;
-using zetasql_expression_grammar::LiteralExpr;
-using zetasql_expression_grammar::IntegerLiteral;
-using zetasql_expression_grammar::NumericLiteral;
-using zetasql_expression_grammar::CompoundExpr;
-using zetasql_expression_grammar::BinaryOperation;
-using parameter_grammar::Whitespace;
-
 namespace zetasql_fuzzer {
 
 class ProtoExprExtractor {
  public:
-  void Extract(const Expression& expr);
-  void Extract(const LiteralExpr& literal);
-  void Extract(const IntegerLiteral& integer);
-  void Extract(const NumericLiteral& numeric);
-  void Extract(const CompoundExpr& comp_expr);
-  void Extract(const BinaryOperation& binary_operation);
-  void Extract(const Whitespace& whitespace);
+  void Extract(const zetasql_expression_grammar::Expression& expr);
+  void Extract(const zetasql_expression_grammar::LiteralExpr& literal);
+  void Extract(const zetasql_expression_grammar::IntegerLiteral& integer);
+  void Extract(const zetasql_expression_grammar::NumericLiteral& numeric);
+  void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr);
+  void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation);
+  void Extract(const parameter_grammar::Whitespace& whitespace);
   std::string Release();
 
  private:
@@ -62,6 +54,8 @@ class ProtoExprExtractor {
     absl::StrAppend(&builder, value);
   }
   inline void Quote(const std::string& content, const std::string& quote);
+  template <typename T>
+  inline void ExtractDefault(const T& expr);
 };
 
 }  // namespace zetasql_fuzzer

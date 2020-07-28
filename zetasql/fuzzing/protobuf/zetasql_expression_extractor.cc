@@ -16,9 +16,20 @@
 
 #include "zetasql/fuzzing/protobuf/zetasql_expression_extractor.h"
 
-#define EXTRACT_DEFAULT(var) Append(var.default_value().content())
+using zetasql_expression_grammar::Expression;
+using zetasql_expression_grammar::LiteralExpr;
+using zetasql_expression_grammar::NumericLiteral;
+using zetasql_expression_grammar::IntegerLiteral;
+using zetasql_expression_grammar::BinaryOperation;
+using zetasql_expression_grammar::CompoundExpr;
+using parameter_grammar::Whitespace;
 
 namespace zetasql_fuzzer {
+
+template<typename T>
+inline void ProtoExprExtractor::ExtractDefault(const T& expr) {
+  Append(expr.default_value().content());
+}
 
 inline void ProtoExprExtractor::Quote(const std::string& content, const std::string& quote) {
   Append(quote);
@@ -49,7 +60,7 @@ void ProtoExprExtractor::Extract(const Expression& expr) {
       Extract(expr.expr());
       break;
     default:
-      EXTRACT_DEFAULT(expr);
+      ExtractDefault(expr);
       break;
   }
 
@@ -83,7 +94,7 @@ void ProtoExprExtractor::Extract(const LiteralExpr& literal) {
     case LitExprType::kNumericLiteral:
       return Extract(literal.numeric_literal());
     default:
-      return EXTRACT_DEFAULT(literal);
+      return ExtractDefault(literal);
   }
 }
 
@@ -99,7 +110,7 @@ void ProtoExprExtractor::Extract(const IntegerLiteral& integer) {
     case IntergerType::kUint64Literal:
       return Append(integer.uint64_literal());
     default:
-      return EXTRACT_DEFAULT(integer);
+      return ExtractDefault(integer);
   }
 }
 
@@ -114,7 +125,7 @@ void ProtoExprExtractor::Extract(const CompoundExpr& comp_expr) {
     case CompoundExprType::kBinaryOperation:
       return Extract(comp_expr.binary_operation());
     default:
-      return EXTRACT_DEFAULT(comp_expr);
+      return ExtractDefault(comp_expr);
   }
 }
 
