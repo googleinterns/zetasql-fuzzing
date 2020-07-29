@@ -14,23 +14,21 @@
 // limitations under the License.
 //
 
-#ifndef ZETASQL_FUZZING_INPUT_VISITOR_H
-#define ZETASQL_FUZZING_INPUT_VISITOR_H
+#ifndef ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H
+#define ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H
 
-#include <memory>
-#include "zetasql/fuzzing/component/input.h"
-#include "zetasql/fuzzing/component/argument.h"
+#include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
 namespace zetasql_fuzzer {
 
-template<typename InputType>
-class InputVisitor {
- public:
-  virtual void Visit(const zetasql_fuzzer::Input<InputType>& input) = 0;
-  virtual Argument Collect() = 0;
-  virtual void Clear() = 0;
-};
+std::unique_ptr<Argument> GetProtoExpr(const zetasql_expression_grammar::Expression& expression) {
+  zetasql_fuzzer::internal::ProtoExprExtractor extractor;
+  extractor.Extract(expression);
+  return std::make_unique<SQLStringArg>(extractor.Release());
+}
 
 }  // namespace zetasql_fuzzer
 
-#endif  //ZETASQL_FUZZING_INPUT_VISITOR_H
+#endif  //ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H

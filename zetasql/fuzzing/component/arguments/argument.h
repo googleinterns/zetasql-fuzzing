@@ -17,30 +17,35 @@
 #ifndef ZETASQL_FUZZING_ARGUMENT_H
 #define ZETASQL_FUZZING_ARGUMENT_H
 
+#include <string>
 #include <memory>
-
-#include "zetasql/fuzzing/component/function.h"
+#include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
 
 class Argument {
  public:
-  virtual void Accept(zetasql_fuzzer::Function& function) const = 0;
+  virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
 };
 
-template <typename T>
-class PositionalArg : public Argument {
+template <typename ArgType>
+class TypedArg : public Argument {
  public:
-  PositionalArg(std::shared_ptr<const T> value) : argument(value) {}
-  virtual void Accept(zetasql_fuzzer::Function& function) const override {
-    function.Visit(*this);
-  }
-  const std::shared_ptr<const T> GetArgument() const { return argument; }
-  const uint8_t GetPosition() const { return position; }
+  TypedArg(const ArgType& value) : argument(std::make_unique<ArgType>(value)) {}
+  TypedArg(ArgType&& value) : argument(std::make_unique<ArgType>(value)) {}
+  // Use referece or value?
+  std::unique_ptr<ArgType> ReleaseArg() { return std::move(argument); }
 
  private:
-  std::shared_ptr<const T> argument;
-  uint8_t position;
+  std::unique_ptr<ArgType> argument;
+};
+
+class SQLStringArg : public TypedArg<std::string> {
+ public:
+  using TypedArg::TypedArg;
+  virtual void Accept(zetasql_fuzzer::FuzzTarget& function) override {
+    function.Visit(*this);
+  }
 };
 
 }  // namespace zetasql_fuzzer

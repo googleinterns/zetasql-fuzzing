@@ -24,6 +24,16 @@ package(
     default_visibility = ["//zetasql/fuzzing:__subpackages__"],
 )
 
+cc_library(
+    name = "argument_extractors",
+    hdrs = [ "argument_extractors.h", ],
+    deps = [
+        ":zetasql_expression_cc_proto",
+        "//zetasql/fuzzing/component:fuzz_target",
+        "//zetasql/fuzzing/protobuf/internal:zetasql_expression_extractor",
+    ]
+)
+
 cc_test(
     name = "zetasql_expression_proto_to_string_test",
     srcs = ["zetasql_expression_proto_to_string_test.cc"],

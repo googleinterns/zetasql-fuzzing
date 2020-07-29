@@ -44,3 +44,14 @@ cc_proto_fuzzer(
         "//zetasql/fuzzing/protobuf:zetasql_expression_proto_to_string",
     ],
 )
+
+cc_proto_fuzzer(
+    name = "pipelined_expression_fuzzer",
+    srcs = [ "pipelined_expression_fuzzer.cc" ],
+    additional_deps = [
+        "//zetasql/fuzzing/component:runner",
+        "//zetasql/fuzzing/component:prepared_expression_target",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        "//zetasql/fuzzing/protobuf:argument_extractors",
+    ]
+)

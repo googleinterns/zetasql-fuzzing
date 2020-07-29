@@ -22,50 +22,28 @@ package(
 )
 
 cc_library(
-    name = "zetasql_fuzzer_function",
-    srcs = [],
-    hdrs = [ "function.h" ],
+    name = "fuzz_target",
+    hdrs = [ 
+        "fuzz_targets/fuzz_target.h",
+        "arguments/argument.h",
+    ],
+)
+
+cc_library(
+    name = "prepared_expression_target",
+    srcs = [ "fuzz_targets/prepared_expression_target.cc" ],
+    hdrs = [ "fuzz_targets/prepared_expression_target.h"],
     deps = [
-        "//zetasql/public:evaluator_base",
-        ":zetasql_fuzzer_argument",
+        ":fuzz_target",
+        "//zetasql/public:evaluator"
     ]
 )
 
 cc_library(
-    name = "zetasql_fuzzer_argument",
-    srcs = [],
-    hdrs = [ "argument.h" ],
-    deps = [
-        ":zetasql_fuzzer_function",
-    ]
-)
-
-cc_library(
-    name = "zetasql_fuzzer_input",
-    srcs = [],
-    hdrs = [ "input.h" ],
-    deps = [
-        ":zetasql_fuzzer_input_visitor",
-    ]
-)
-
-cc_library(
-    name = "zetasql_fuzzer_input_visitor",
-    srcs = [],
-    hdrs = [ "input_visitor.h" ],
-    deps = [
-        ":zetasql_fuzzer_input",
-        ":zetasql_fuzzer_argument",
-    ]
-)
-
-cc_library(
-    name = "zetasql_fuzzer_runner",
+    name = "runner",
     srcs = [],
     hdrs = [ "runner.h" ],
     deps = [
-        ":zetasql_fuzzer_function",
-        ":zetasql_fuzzer_input",
-        ":zetasql_fuzzer_input_visitor",
+        ":fuzz_target",
     ]
 )
