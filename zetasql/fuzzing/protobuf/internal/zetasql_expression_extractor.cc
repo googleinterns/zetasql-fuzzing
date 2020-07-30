@@ -14,7 +14,7 @@
 // limitations under the License.
 //'
 
-#include "zetasql/fuzzing/protobuf/zetasql_expression_extractor.h"
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
 using zetasql_expression_grammar::Expression;
 using zetasql_expression_grammar::LiteralExpr;
@@ -25,11 +25,7 @@ using zetasql_expression_grammar::CompoundExpr;
 using parameter_grammar::Whitespace;
 
 namespace zetasql_fuzzer {
-
-template<typename T>
-inline void ProtoExprExtractor::ExtractDefault(const T& expr) {
-  Append(expr.default_value().content());
-}
+namespace internal {
 
 inline void ProtoExprExtractor::Quote(const std::string& content, const std::string& quote) {
   Append(quote);
@@ -38,8 +34,8 @@ inline void ProtoExprExtractor::Quote(const std::string& content, const std::str
 }
 
 std::string ProtoExprExtractor::Release() {
-  std::string released(std::move(builder));
-  builder.clear();
+  std::string released(std::move(builder_));
+  builder_.clear();
   return released;
 }
 
@@ -80,7 +76,7 @@ void ProtoExprExtractor::Extract(const LiteralExpr& literal) {
         case LiteralExpr::V_NULL:
           return Append("NULL");
         default:
-          Exit("Undefined Special Literal");
+          Exit("Unhandled Special Literal. Please update Extractor implementation");
       }
     case LitExprType::kBoolLiteral:
       return Append(literal.bool_literal() ? "TRUE" : "FALSE");
@@ -129,35 +125,56 @@ void ProtoExprExtractor::Extract(const CompoundExpr& comp_expr) {
   }
 }
 
+using zetasql_expression_grammar::BinaryOperation_Operator;
+inline void ProtoExprExtractor::ExtractBinaryOperator(
+    const BinaryOperation_Operator binary) {
+  switch (binary) {
+    case BinaryOperation::PLUS:
+      return Append("+");
+    case BinaryOperation::MINUS:
+      return Append("-");
+    case BinaryOperation::MULTIPLY:
+      return Append("*");
+    case BinaryOperation::DIVIDE:
+      return Append("/");
+    default:
+      Exit("Unhandled Binary Operation. Please update Extractor implementation");
+  }
+}
+
 void ProtoExprExtractor::Extract(const BinaryOperation& binary_operation) {
   using zetasql_expression_grammar::BinaryOperation_Operator;
-  const static std::map<BinaryOperation_Operator, std::string> operators{
-      {BinaryOperation::PLUS, "+"},
-      {BinaryOperation::MINUS, "-"},
-      {BinaryOperation::MULTIPLY, "*"},
-      {BinaryOperation::DIVIDE, "/"},
-  };
   Extract(binary_operation.lhs());
   Extract(binary_operation.left_pad());
-  TryCatch([&] { Append(operators.at(binary_operation.op())); });
+  ExtractBinaryOperator(binary_operation.op());
   Extract(binary_operation.right_pad());
   Extract(binary_operation.rhs());
 }
 
-void ProtoExprExtractor::Extract(const Whitespace& whitespace) {
-  using parameter_grammar::Whitespace_Type;
-  const static std::map<Whitespace_Type, std::string> whitespaces{
-      {Whitespace::SPACE, " "},
-      {Whitespace::BACKSPACE, "\b"},
-      {Whitespace::TAB, "\t"},
-      {Whitespace::NEWLINE, "\n"},
-  };
-  TryCatch([&] { Append(whitespaces.at(whitespace.space())); });
-  for (const auto& additional_space : whitespace.additional()) {
-    TryCatch([&] {
-      Append(whitespaces.at(static_cast<Whitespace_Type>(additional_space)));
-    });
+using parameter_grammar::Whitespace_Type;
+inline void ProtoExprExtractor::ExtractWhitespaceCharacter(
+    const Whitespace_Type whitespace) {
+  switch (whitespace) {
+    case Whitespace::SPACE:
+      return Append(" ");
+    case Whitespace::BACKSPACE:
+      return Append("\b");
+    case Whitespace::TAB:
+      return Append("\t");
+    case Whitespace::NEWLINE:
+      return Append("\n");
+    default:
+      Exit("Unhandled Whitespace Character. Please update Extractor implementation");
   }
 }
 
+void ProtoExprExtractor::Extract(const Whitespace& whitespaces) {
+  using parameter_grammar::Whitespace_Type;
+  ExtractWhitespaceCharacter(whitespaces.space());
+  for (const auto& additional_space : whitespaces.additional()) {
+    ExtractWhitespaceCharacter(static_cast<Whitespace_Type>(additional_space));
+  }
+}
+
+}  // namespace internal
 }  // namespace zetasql_fuzzer

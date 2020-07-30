@@ -16,9 +16,11 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
+#include <google/protobuf/text_format.h>
 
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/protobuf/zetasql_expression_extractor.h"
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 #include "gtest/gtest.h"
 
 using zetasql_expression_grammar::Expression;
@@ -28,11 +30,71 @@ using zetasql_expression_grammar::NumericLiteral;
 using zetasql_expression_grammar::CompoundExpr;
 using zetasql_expression_grammar::BinaryOperation;
 using parameter_grammar::Whitespace;
-using zetasql_fuzzer::ProtoExprExtractor;
+using zetasql_fuzzer::internal::ProtoExprExtractor;
 
 namespace zetasql_fuzzer {
+namespace {
 
-class ProtoExprExtractorTest : public ::testing::Test {};
+class ProtoExpression {
+ public:
+  virtual void Accept(ProtoExprExtractor& extractor) = 0;
+  virtual ::google::protobuf::Message* GetExpression() = 0;
+};
+
+using ProtoExpressionCreator = std::function<std::unique_ptr<ProtoExpression>(void)>;
+template <typename MessageType>
+class TypedExpression : public ProtoExpression {
+ public:
+  static std::unique_ptr<ProtoExpression> Create() {
+    return std::unique_ptr<ProtoExpression>(new TypedExpression<MessageType>);
+  }
+  virtual void Accept(ProtoExprExtractor& extractor) override {
+    extractor.Extract(container);
+  }
+  virtual ::google::protobuf::Message* GetExpression() {
+    return &container;
+  }
+
+ private:
+  MessageType container;
+};
+
+}  // namespace
+
+namespace internal {
+
+class ProtoExprExtractorTest
+    : public ::testing::TestWithParam<
+          std::tuple<ProtoExpressionCreator, std::string, std::string>> {
+ protected:
+  ProtoExprExtractor extractor;
+  std::unique_ptr<ProtoExpression> expression;
+
+  const std::string& GetExpected() {
+    return std::get<2>(GetParam());
+  }
+};
+
+TEST_P(ProtoExprExtractorTest, ParamTest) {
+  expression = std::get<0>(GetParam())();
+  if (!::google::protobuf::TextFormat::ParseFromString(
+          std::get<1>(GetParam()), expression->GetExpression())) {
+    std::cerr << "Error Parsing Protobuf Message" << std::endl;
+    std::abort();
+  }
+  expression->Accept(extractor);
+  EXPECT_EQ(extractor.Release(), GetExpected());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ParamTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple<ProtoExpressionCreator, std::string, std::string>(
+            TypedExpression<Expression>::Create, R"expr(default_value {
+  content: "a"
+}
+parenthesized: false)expr",
+            "a")));
 
 TEST_F(ProtoExprExtractorTest, ExtractorReleaseTest) {
   std::string arbitrary("asdAgwegfGgw11");
@@ -45,12 +107,11 @@ TEST_F(ProtoExprExtractorTest, ExtractorReleaseTest) {
   EXPECT_EQ(extractor.Release(), "");
 }
 
-namespace {
-
 TEST_F(ProtoExprExtractorTest, UninitializedOneOfExprTest) {
   ProtoExprExtractor extractor;
 
   Expression expr;
+  std::string s;
   extractor.Extract(expr);
   EXPECT_EQ(extractor.Release(), "");
 
@@ -84,12 +145,15 @@ TEST_F(ProtoExprExtractorTest, UninitializedOneOfExprTest) {
 }
 
 TEST_F(ProtoExprExtractorTest, SpecialLiteralTest) {
-  using SpecialVal = zetasql_expression_grammar::LiteralExpr_SpecialValue;
+  using zetasql_expression_grammar::LiteralExpr_SpecialValue;
   LiteralExpr lit_expr;
   ProtoExprExtractor extractor;
-  lit_expr.set_special_literal(SpecialVal::LiteralExpr_SpecialValue_V_NULL);
+  lit_expr.set_special_literal(LiteralExpr::V_NULL);
   extractor.Extract(lit_expr);
   EXPECT_EQ(extractor.Release(), "NULL");
+  // lit_expr.set_special_literal(static_cast<LiteralExpr_SpecialValue>(100));
+  // extractor.Extract(lit_expr);
+  // EXPECT_DEATH(extractor.Extract(lit_expr));
 }
 
 TEST_F(ProtoExprExtractorTest, StringLiteralTest) {

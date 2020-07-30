@@ -23,6 +23,7 @@
 #include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
 
 namespace zetasql_fuzzer {
+namespace internal {
 
 class ProtoExprExtractor {
  public:
@@ -32,32 +33,34 @@ class ProtoExprExtractor {
   void Extract(const zetasql_expression_grammar::NumericLiteral& numeric);
   void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr);
   void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation);
-  void Extract(const parameter_grammar::Whitespace& whitespace);
+  void Extract(const parameter_grammar::Whitespace& whitespaces);
   std::string Release();
 
+ protected:
+  template <typename T>
+  inline void ExtractDefault(const T& expr) {
+    Append(expr.default_value().content());
+  }
+  inline void Append(const absl::AlphaNum& value) {
+    absl::StrAppend(&builder_, value);
+  }
+
  private:
-  std::string builder;
+  std::string builder_;
   FRIEND_TEST(ProtoExprExtractorTest, ExtractorReleaseTest);
 
   inline void Exit(const std::string& error) {
     std::cerr << error << std::endl;
     std::abort();
   }
-  inline void TryCatch(const std::function<void()>& callback) {
-    try {
-      callback();
-    } catch (const std::exception& e) {
-      Exit(e.what());
-    }
-  }
-  inline void Append(const absl::AlphaNum& value) {
-    absl::StrAppend(&builder, value);
-  }
   inline void Quote(const std::string& content, const std::string& quote);
-  template <typename T>
-  inline void ExtractDefault(const T& expr);
+  inline void ExtractBinaryOperator(
+      const zetasql_expression_grammar::BinaryOperation_Operator binary);
+  inline void ExtractWhitespaceCharacter(
+      const parameter_grammar::Whitespace_Type whitespace);
 };
 
+}  // namespace internal
 }  // namespace zetasql_fuzzer
 
 #endif  // ZETASQL_FUZZING_ZETASQL_EXPRESSION_EXTRACTOR_H

@@ -24,27 +24,6 @@ package(
     default_visibility = ["//zetasql/fuzzing:__subpackages__"],
 )
 
-cc_library(
-    name = "zetasql_expression_extractor",
-    srcs = [ "zetasql_expression_extractor.cc", ],
-    hdrs = [ "zetasql_expression_extractor.h", ],
-    deps = [
-        ":zetasql_expression_cc_proto",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_prod",
-    ]
-)
-
-cc_test(
-    name = "zetasql_expression_extractor_test",
-    srcs = [ "zetasql_expression_extractor_test.cc", ],
-    deps = [
-        ":zetasql_expression_extractor",
-        ":zetasql_expression_cc_proto",
-        "@com_google_googletest//:gtest_main",
-    ]
-)
-
 cc_test(
     name = "zetasql_expression_proto_to_string_test",
     srcs = ["zetasql_expression_proto_to_string_test.cc"],
