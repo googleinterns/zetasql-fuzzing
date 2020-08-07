@@ -17,44 +17,24 @@
 #ifndef ZETASQL_FUZZING_RUNNER_H
 #define ZETASQL_FUZZING_RUNNER_H
 
-#include <memory>
 #include <functional>
-#include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
+#include <memory>
+
 #include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
 
-template<typename InputType, typename TargetType, typename ... Functions>
+template <typename InputType, typename TargetType, typename... Functions>
 void Run(const InputType& input, Functions... functions) {
   TargetType target;
-  std::function<std::unique_ptr<Argument>(const InputType&)>
-      extractors[sizeof...(functions)] = {functions...};
-  for (auto& extractor : extractors) {
+  for (const std::function<std::unique_ptr<Argument>(const InputType&)>&
+           extractor : {functions...}) {
     extractor(input)->Accept(target);
   }
   target.Execute();
 }
 
-// REMOVE IF NOT USED
-// We explicitly specifiy input type because all visitors and 
-// input should conform to the same type.
-// template<typename InputType, typename TargetType>
-// class Runner {
-//  public:
-//   using FunctionType = std::function<std::unique_ptr<Argument>(const InputType&)>;
-//   Runner() {}
-//   void Run(const InputType& input) {
-//     for (const FunctionType& extractor : argument_extracters) {
-//       extractor(input)->Accept(target);
-//     }
-//     target.Execute();
-//   }
-
-//  private:
-//   const std::vector<FunctionType> argument_extracters;
-//   TargetType target;
-// };
-
 }  // namespace zetasql_fuzzer
 
-#endif  //ZETASQL_FUZZING_RUNNER_H
+#endif  // ZETASQL_FUZZING_RUNNER_H
