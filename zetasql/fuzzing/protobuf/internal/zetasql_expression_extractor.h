@@ -34,7 +34,7 @@ class ProtoExprExtractor {
   void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr);
   void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation);
   void Extract(const parameter_grammar::Whitespace& whitespaces);
-  std::string Release();
+  inline std::string& Data() { return builder_; };
 
  protected:
   template <typename T>
@@ -47,7 +47,6 @@ class ProtoExprExtractor {
 
  private:
   std::string builder_;
-  FRIEND_TEST(ProtoExprExtractorTest, ExtractorReleaseTest);
 
   inline void Exit(const std::string& error) {
     std::cerr << error << std::endl;

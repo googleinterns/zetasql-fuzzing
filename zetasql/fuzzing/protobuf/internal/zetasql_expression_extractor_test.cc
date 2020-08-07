@@ -35,242 +35,225 @@ using zetasql_fuzzer::internal::ProtoExprExtractor;
 namespace zetasql_fuzzer {
 namespace {
 
-class ProtoExpression {
- public:
-  virtual void Accept(ProtoExprExtractor& extractor) = 0;
-  virtual ::google::protobuf::Message* GetExpression() = 0;
-};
-
-using ProtoExpressionCreator = std::function<std::unique_ptr<ProtoExpression>(void)>;
-template <typename MessageType>
-class TypedExpression : public ProtoExpression {
- public:
-  static std::unique_ptr<ProtoExpression> Create() {
-    return std::unique_ptr<ProtoExpression>(new TypedExpression<MessageType>);
-  }
-  virtual void Accept(ProtoExprExtractor& extractor) override {
-    extractor.Extract(container);
-  }
-  virtual ::google::protobuf::Message* GetExpression() {
-    return &container;
-  }
-
- private:
-  MessageType container;
-};
-
-}  // namespace
-
-namespace internal {
-
+using InvokeExtractCallback = std::function<void(ProtoExprExtractor&)>;
 class ProtoExprExtractorTest
     : public ::testing::TestWithParam<
-          std::tuple<ProtoExpressionCreator, std::string, std::string>> {
+          std::tuple<InvokeExtractCallback, std::string>> {
  protected:
   ProtoExprExtractor extractor;
-  std::unique_ptr<ProtoExpression> expression;
-
-  const std::string& GetExpected() {
-    return std::get<2>(GetParam());
-  }
 };
 
-TEST_P(ProtoExprExtractorTest, ParamTest) {
-  expression = std::get<0>(GetParam())();
-  if (!::google::protobuf::TextFormat::ParseFromString(
-          std::get<1>(GetParam()), expression->GetExpression())) {
-    std::cerr << "Error Parsing Protobuf Message" << std::endl;
-    std::abort();
-  }
-  expression->Accept(extractor);
-  EXPECT_EQ(extractor.Release(), GetExpected());
+TEST_F(ProtoExprExtractorTest, ExtractorDataRefIdempotentTest) {
+  const std::string arbitrary("asdAgwegfGgw11");
+  const std::string another("aaaa((");
+  ProtoExprExtractor extractor;
+
+  EXPECT_EQ(extractor.Data(), "");
+  extractor.Data() = arbitrary;
+  EXPECT_EQ(extractor.Data(), arbitrary);
+
+  EXPECT_EQ(extractor.Data(), arbitrary);
+  extractor.Data() = another;
+  EXPECT_EQ(extractor.Data(), another);
+}
+
+// Parameterized Test
+
+TEST_P(ProtoExprExtractorTest, ExtractTest) {
+  std::get<0>(GetParam())(extractor);
+  EXPECT_EQ(extractor.Data(), std::get<1>(GetParam()));
+}
+
+template <typename ExprType>
+InvokeExtractCallback ExtractableEmptyExpression() {
+  return [](ProtoExprExtractor& extractor) {
+    ExprType expression;
+    extractor.Extract(expression);
+  };
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    ParamTest, ProtoExprExtractorTest,
+    EmptyExpressionTest, ProtoExprExtractorTest,
     ::testing::Values(
-        std::make_tuple<ProtoExpressionCreator, std::string, std::string>(
-            TypedExpression<Expression>::Create, R"expr(default_value {
-  content: "a"
-}
-parenthesized: false)expr",
-            "a")));
+        std::make_tuple(ExtractableEmptyExpression<Expression>(), ""),
+        std::make_tuple(ExtractableEmptyExpression<LiteralExpr>(), ""),
+        std::make_tuple(ExtractableEmptyExpression<IntegerLiteral>(), ""),
+        std::make_tuple(ExtractableEmptyExpression<CompoundExpr>(), "")));
 
-TEST_F(ProtoExprExtractorTest, ExtractorReleaseTest) {
-  std::string arbitrary("asdAgwegfGgw11");
-  ProtoExprExtractor extractor;
-
-  EXPECT_EQ(extractor.Release(), "");
-  extractor.Append(arbitrary);
-  EXPECT_EQ(arbitrary, "asdAgwegfGgw11");
-  EXPECT_EQ(extractor.Release(), "asdAgwegfGgw11");
-  EXPECT_EQ(extractor.Release(), "");
+template <typename ExprType>
+InvokeExtractCallback ExtractableDefaultValue(const std::string& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    ExprType expression;
+    expression.mutable_default_value()->set_content(value);
+    extractor.Extract(expression);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, UninitializedOneOfExprTest) {
-  ProtoExprExtractor extractor;
+INSTANTIATE_TEST_SUITE_P(
+    DefaultOneOfValueTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableDefaultValue<Expression>("default"),
+                        "default"),
+        std::make_tuple(ExtractableDefaultValue<LiteralExpr>("default_lit"),
+                        "default_lit"),
+        std::make_tuple(ExtractableDefaultValue<IntegerLiteral>("default_int"),
+                        "default_int"),
+        std::make_tuple(ExtractableDefaultValue<CompoundExpr>("default_expr"),
+                        "default_expr")));
 
-  Expression expr;
-  std::string s;
-  extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "");
-
-  expr.mutable_default_value()->set_content("default");
-  extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "default");
-
-  LiteralExpr lit_expr;
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "");
-
-  lit_expr.mutable_default_value()->set_content("default_lit");
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "default_lit");
-
-  IntegerLiteral int_expr;
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "");
-
-  int_expr.mutable_default_value()->set_content("default_int");
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "default_int");
-
-  CompoundExpr comp_expr;
-  extractor.Extract(comp_expr);
-  EXPECT_EQ(extractor.Release(), "");
-
-  comp_expr.mutable_default_value()->set_content("default_expr");
-  extractor.Extract(comp_expr);
-  EXPECT_EQ(extractor.Release(), "default_expr");
+InvokeExtractCallback ExtractableStringLiteral(
+    const std::string& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    LiteralExpr expr;
+    expr.set_string_literal(value);
+    extractor.Extract(expr);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, SpecialLiteralTest) {
-  using zetasql_expression_grammar::LiteralExpr_SpecialValue;
-  LiteralExpr lit_expr;
-  ProtoExprExtractor extractor;
-  lit_expr.set_special_literal(LiteralExpr::V_NULL);
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "NULL");
-  // lit_expr.set_special_literal(static_cast<LiteralExpr_SpecialValue>(100));
-  // extractor.Extract(lit_expr);
-  // EXPECT_DEATH(extractor.Extract(lit_expr));
+INSTANTIATE_TEST_SUITE_P(
+    StringLiteralTest, ProtoExprExtractorTest,
+    ::testing::Values(std::make_tuple(ExtractableStringLiteral(""), "\"\""),
+                      std::make_tuple(ExtractableStringLiteral("tEsT"), "\"tEsT\"")));
+
+InvokeExtractCallback ExtractableBytesLiteral(
+    const std::string& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    LiteralExpr expr;
+    expr.set_bytes_literal(value);
+    extractor.Extract(expr);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, StringLiteralTest) {
-  LiteralExpr str_expr;
-  ProtoExprExtractor extractor;
+INSTANTIATE_TEST_SUITE_P(
+    BytesLiteralTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableBytesLiteral(""), "B\"\""),
+        std::make_tuple(ExtractableBytesLiteral("TeSt"), "B\"TeSt\""),
+        std::make_tuple(ExtractableBytesLiteral("\x01\x02"), "B\"\x01\x02\"")));
 
-  str_expr.set_string_literal("");
-  extractor.Extract(str_expr);
-  EXPECT_EQ(extractor.Release(), "\"\"");
-
-  str_expr.set_string_literal("tEsT");
-  extractor.Extract(str_expr);
-  EXPECT_EQ(extractor.Release(), "\"tEsT\"");
+InvokeExtractCallback ExtractableSpecialLiteral(const zetasql_expression_grammar::LiteralExpr_SpecialValue& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    LiteralExpr expression;
+    expression.set_special_literal(value);
+    extractor.Extract(expression);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, BytesLiteralTest) {
-  LiteralExpr lit_expr;
-  ProtoExprExtractor extractor;
-  lit_expr.mutable_bytes_literal();
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "B\"\"");
+INSTANTIATE_TEST_SUITE_P(
+    SpecialLiteralTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableSpecialLiteral(LiteralExpr::V_NULL), "NULL")));
 
-  lit_expr.set_bytes_literal("");
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "B\"\"");
-
-  lit_expr.set_bytes_literal("TeSt");
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "B\"TeSt\"");
-
-  lit_expr.set_bytes_literal("\x01\x02");
-  extractor.Extract(lit_expr);
-  EXPECT_EQ(extractor.Release(), "B\"\x01\x02\"");
+template <IntegerLiteral::IntegerOneofCase IntegerType, typename T>
+InvokeExtractCallback ExtractableIntegerLiteral(const T& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    IntegerLiteral expression;
+    switch (IntegerType) {
+      case IntegerLiteral::kInt32Literal:
+        expression.set_int32_literal(value);
+        break;
+      case IntegerLiteral::kUint32Literal:
+        expression.set_uint32_literal(value);
+        break;
+      case IntegerLiteral::kInt64Literal:
+        expression.set_int64_literal(value);
+        break;
+      case IntegerLiteral::kUint64Literal:
+        expression.set_uint64_literal(value);
+        break;
+      default:
+        assert(false && "IntegerType for IntegerLiteralTest is wrongly set up");
+    }
+    extractor.Extract(expression);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, IntegerLiteralTest) {
-  IntegerLiteral int_expr;
-  ProtoExprExtractor extractor;
-  int_expr.set_int32_literal(1);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "1");
-  int_expr.set_int32_literal(0);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "0");
-  int_expr.set_int32_literal(google::protobuf::kint32max);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "2147483647");
-  int_expr.set_int32_literal(google::protobuf::kint32min);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "-2147483648");
+INSTANTIATE_TEST_SUITE_P(
+  IntegerLiteralTest, ProtoExprExtractorTest,
+  ::testing::Values(
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt32Literal>(1), "1"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt32Literal>(0), "0"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt32Literal>(google::protobuf::kint32max), "2147483647"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt32Literal>(google::protobuf::kint32min), "-2147483648"),
 
-  int_expr.set_uint32_literal(1);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "1");
-  int_expr.set_uint32_literal(0);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "0");
-  int_expr.set_uint32_literal(google::protobuf::kuint32max);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "4294967295");
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint32Literal>(1), "1"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint32Literal>(0), "0"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint32Literal>(google::protobuf::kuint32max), "4294967295"),
 
-  int_expr.set_int64_literal(1);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "1");
-  int_expr.set_int64_literal(0);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "0");
-  int_expr.set_int64_literal(google::protobuf::kint64max);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "9223372036854775807");
-  int_expr.set_int64_literal(google::protobuf::kint64min);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "-9223372036854775808");
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt64Literal>(1), "1"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt64Literal>(0), "0"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt64Literal>(google::protobuf::kint64max), "9223372036854775807"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kInt64Literal>(google::protobuf::kint64min), "-9223372036854775808"),
 
-  int_expr.set_uint64_literal(1);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "1");
-  int_expr.set_uint64_literal(0);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "0");
-  int_expr.set_uint64_literal(google::protobuf::kuint64max);
-  extractor.Extract(int_expr);
-  EXPECT_EQ(extractor.Release(), "18446744073709551615");
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint64Literal>(1), "1"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint64Literal>(0), "0"),
+    std::make_tuple(ExtractableIntegerLiteral<IntegerLiteral::kUint64Literal>(google::protobuf::kuint64max), "18446744073709551615")
+  )
+);
+
+InvokeExtractCallback ExtractableNumeric(const std::string& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    NumericLiteral expression;
+    expression.set_value(value);
+    extractor.Extract(expression);
+  };
 }
 
-TEST_F(ProtoExprExtractorTest, NumericLiteralTest) {
-  NumericLiteral num_expr;
-  ProtoExprExtractor extractor;
-  num_expr.set_value("\xff\xff\xff\xff");
-  extractor.Extract(num_expr);
-  EXPECT_EQ(extractor.Release(), "NUMERIC '\xff\xff\xff\xff'");
+INSTANTIATE_TEST_SUITE_P(
+    NumericLiteralTest, ProtoExprExtractorTest,
+    ::testing::Values(std::make_tuple(ExtractableNumeric("\xff\xff\xff\xff"),
+                                      "NUMERIC '\xff\xff\xff\xff'")));
+
+void InsertWhitespaceHelper(Whitespace& expression, const std::vector<Whitespace::Type>& value) {
+  if (value.empty()) return;
+  auto it = value.begin();
+  expression.set_space(*it);
+  auto end = value.end();
+  for (++it; it != end; it++) {
+    expression.add_additional(*it);
+  }
 }
 
-TEST_F(ProtoExprExtractorTest, WhitespaceExprTest) {
-  Whitespace whitespace;
-  whitespace.set_space(Whitespace::SPACE);
-
-  ProtoExprExtractor extractor;
-  extractor.Extract(whitespace);
-  EXPECT_EQ(extractor.Release(), " ");
-
-  whitespace.add_additional(Whitespace::SPACE);
-  extractor.Extract(whitespace);
-  EXPECT_EQ(extractor.Release(), "  ");
-
-  whitespace.set_space(Whitespace::TAB);
-  extractor.Extract(whitespace);
-  EXPECT_EQ(extractor.Release(), "\t ");
-
-  whitespace.add_additional(Whitespace::BACKSPACE);
-  extractor.Extract(whitespace);
-  EXPECT_EQ(extractor.Release(), "\t \b");
-
-  whitespace.add_additional(Whitespace::NEWLINE);
-  extractor.Extract(whitespace);
-  EXPECT_EQ(extractor.Release(), "\t \b\n");
+InvokeExtractCallback ExtractableWhitespaces(const std::vector<Whitespace::Type>& value) {
+  return [value](ProtoExprExtractor& extractor) {
+    Whitespace expression;
+    InsertWhitespaceHelper(expression, value);
+    extractor.Extract(expression);
+  };
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    WhitespaceTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableWhitespaces({Whitespace::SPACE}), " "),
+        std::make_tuple(ExtractableWhitespaces({Whitespace::SPACE, Whitespace::SPACE}), "  "),
+        std::make_tuple(ExtractableWhitespaces({Whitespace::TAB, Whitespace::SPACE}), "\t "),
+        std::make_tuple(ExtractableWhitespaces({Whitespace::TAB, Whitespace::SPACE, Whitespace::BACKSPACE}), "\t \b"),
+        std::make_tuple(ExtractableWhitespaces({Whitespace::TAB, Whitespace::SPACE, Whitespace::BACKSPACE, Whitespace::NEWLINE}), "\t \b\n")
+    )
+);
+
+InvokeExtractCallback ExtractableParenthesis(
+    const std::string& value, bool parenthesized,
+    const std::vector<Whitespace::Type>& leading_space,
+    const std::vector<Whitespace::Type>& trailing_space) {
+  return [value, parenthesized, leading_space, trailing_space](ProtoExprExtractor& extractor) {
+    Expression expr;
+    expr.mutable_default_value()->set_content(value);
+    expr.set_parenthesized(parenthesized);
+    InsertWhitespaceHelper(*expr.mutable_leading_pad(), leading_space);
+    InsertWhitespaceHelper(*expr.mutable_trailing_pad(), trailing_space);
+    extractor.Extract(expr);
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ParenthesisTest, ProtoExprExtractorTest,
+    ::testing::Values(
+      std::make_tuple(ExtractableParenthesis("asdf", true, {Whitespace::SPACE}, {Whitespace::TAB}), "( asdf\t)"),
+      std::make_tuple(ExtractableParenthesis("asdf", false, {Whitespace::SPACE}, {Whitespace::TAB}), "asdf")
+    )
+);
 
 TEST_F(ProtoExprExtractorTest, BinaryExprTest) {
   BinaryOperation binary;
@@ -283,15 +266,12 @@ TEST_F(ProtoExprExtractorTest, BinaryExprTest) {
       ->mutable_integer_literal()
       ->set_int32_literal(1);
 
-  ProtoExprExtractor extractor;
   extractor.Extract(binary);
-  EXPECT_EQ(extractor.Release(), "TeSt\t+\n1");
+  EXPECT_EQ(extractor.Data(), "TeSt\t+\n1");
 }
 
 TEST_F(ProtoExprExtractorTest, CompoundExprTest) {
   Expression expr;
-  ProtoExprExtractor extractor;
-
   expr.mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MULTIPLY);
   expr.mutable_expr()->mutable_binary_operation()
@@ -310,7 +290,7 @@ TEST_F(ProtoExprExtractorTest, CompoundExprTest) {
   expr.mutable_expr()->mutable_binary_operation()
     ->set_allocated_rhs(subexpr.release()); 
   extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "\"tEsT\" * 18446744073709551615 - -2147483648");
+  EXPECT_EQ(extractor.Data(), "\"tEsT\" * 18446744073709551615 - -2147483648");
 }
 
 TEST_F(ProtoExprExtractorTest, IncrementalTest) {
@@ -323,25 +303,7 @@ TEST_F(ProtoExprExtractorTest, IncrementalTest) {
   NumericLiteral num_expr;
   num_expr.set_value("asdfas");
   extractor.Extract(num_expr);
-  EXPECT_EQ(extractor.Release(), "1NUMERIC 'asdfas'");
-}
-
-TEST_F(ProtoExprExtractorTest, ParenthesesTest) {
-  Expression expr;
-  ProtoExprExtractor extractor;
-
-  expr.mutable_literal()->mutable_numeric_literal()->set_value("asdf");
-  expr.set_parenthesized(true);
-  extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "(NUMERIC 'asdf')");
-
-  expr.mutable_leading_pad()->set_space(Whitespace::SPACE);
-  extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "( NUMERIC 'asdf')");
-
-  expr.mutable_trailing_pad()->set_space(Whitespace::NEWLINE);
-  extractor.Extract(expr);
-  EXPECT_EQ(extractor.Release(), "( NUMERIC 'asdf'\n)");
+  EXPECT_EQ(extractor.Data(), "1NUMERIC 'asdfas'");
 }
 
 }  // namespace

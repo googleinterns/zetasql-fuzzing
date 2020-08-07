@@ -33,12 +33,6 @@ inline void ProtoExprExtractor::Quote(const std::string& content, const std::str
   Append(quote);
 }
 
-std::string ProtoExprExtractor::Release() {
-  std::string released(std::move(builder_));
-  builder_.clear();
-  return released;
-}
-
 void ProtoExprExtractor::Extract(const Expression& expr) {
   using ExprType = Expression::ExprOneofCase;
   if (expr.parenthesized()) {
