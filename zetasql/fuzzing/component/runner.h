@@ -20,7 +20,6 @@
 #include <functional>
 #include <memory>
 
-#include "zetasql/fuzzing/component/arguments/argument.h"
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
@@ -28,9 +27,9 @@ namespace zetasql_fuzzer {
 template <typename InputType, typename TargetType, typename... Functions>
 void Run(const InputType& input, Functions... functions) {
   TargetType target;
-  for (const std::function<std::unique_ptr<Argument>(const InputType&)>&
-           extractor : {functions...}) {
-    extractor(input)->Accept(target);
+  for (const std::function<void(const InputType&, FuzzTarget&)>&
+           extract_and_apply : {functions...}) {
+    extract_and_apply(input, target);
   }
   target.Execute();
 }

@@ -23,10 +23,10 @@
 
 namespace zetasql_fuzzer {
 
-std::unique_ptr<Argument> GetProtoExpr(const zetasql_expression_grammar::Expression& expression) {
+void ExtractApplyProtoExpr(const zetasql_expression_grammar::Expression& expression, FuzzTarget& target) {
   zetasql_fuzzer::internal::ProtoExprExtractor extractor;
   extractor.Extract(expression);
-  return std::make_unique<SQLStringArg>(extractor.Data());
+  SQLStringArg(extractor.Data()).Accept(target);
 }
 
 }  // namespace zetasql_fuzzer
