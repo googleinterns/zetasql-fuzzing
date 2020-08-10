@@ -43,20 +43,6 @@ class ProtoExprExtractorTest
   ProtoExprExtractor extractor;
 };
 
-TEST_F(ProtoExprExtractorTest, ExtractorDataRefIdempotentTest) {
-  const std::string arbitrary("asdAgwegfGgw11");
-  const std::string another("aaaa((");
-  ProtoExprExtractor extractor;
-
-  EXPECT_EQ(extractor.Data(), "");
-  extractor.Data() = arbitrary;
-  EXPECT_EQ(extractor.Data(), arbitrary);
-
-  EXPECT_EQ(extractor.Data(), arbitrary);
-  extractor.Data() = another;
-  EXPECT_EQ(extractor.Data(), another);
-}
-
 // Parameterized Test
 
 TEST_P(ProtoExprExtractorTest, ExtractTest) {
