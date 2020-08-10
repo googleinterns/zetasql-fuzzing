@@ -1,3 +1,7 @@
+## Temporary branch to bookkeep strange protobuf bug
+
+See [link](https://github.com/googleinterns/zetasql-fuzzing/pull/9#issuecomment-666099470) for detail of the bug
+
 ## ZetaSQL Fuzzing
 
 This is a temporary fork of [ZetaSQL](https://www.github.com/google/zetasql)
