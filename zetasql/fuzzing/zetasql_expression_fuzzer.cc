@@ -17,8 +17,8 @@
 #include "libprotobuf_mutator/src/libfuzzer/libfuzzer_macro.h"
 #include "zetasql/public/evaluator.h"
 #include "zetasql/fuzzing/oss_fuzz.h"
-#include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/zetasql_expression_proto_to_string.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_proto_to_string.h"
 
 using zetasql_expression_grammar::Expression;
 

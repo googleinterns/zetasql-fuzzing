@@ -17,7 +17,7 @@
 #ifndef ZETASQL_FUZZING_ZETASQL_EXPRESSION_PROTO_TO_STRING_H_
 #define ZETASQL_FUZZING_ZETASQL_EXPRESSION_PROTO_TO_STRING_H_
 
-#include "zetasql/fuzzing/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 using zetasql_expression_grammar::Expression;
 

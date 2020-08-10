@@ -18,29 +18,29 @@
 # is not part of the real ZetaSQL library.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//bazel:fuzzing.bzl", "cc_fuzzer", "cc_proto_fuzzer")
 
 package(
-    default_visibility = ["//zetasql/fuzzing:__subpackages__"],
+    default_visibility = ["//zetasql/fuzzing/protobuf:__subpackages__"],
 )
 
 cc_library(
-    name = "oss_fuzz",
-    hdrs = [ "oss_fuzz.h", ]
-)
-
-cc_fuzzer(
-    name = "simple_evaluator_fuzzer",
-    srcs = [ "simple_evaluator_fuzzer.cc", ],
-    additional_deps = [ "//zetasql/public:evaluator", ],
-)
-
-cc_proto_fuzzer(
-    name = "zetasql_expression_fuzzer",
-    srcs = [ "zetasql_expression_fuzzer.cc", ],
-    additional_deps = [
-        "//zetasql/public:evaluator",
+    name = "zetasql_expression_extractor",
+    srcs = [ "zetasql_expression_extractor.cc", ],
+    hdrs = [ "zetasql_expression_extractor.h", ],
+    deps = [
         "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
-        "//zetasql/fuzzing/protobuf:zetasql_expression_proto_to_string",
-    ],
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_prod",
+    ]
 )
+
+cc_test(
+    name = "zetasql_expression_extractor_test",
+    srcs = [ "zetasql_expression_extractor_test.cc", ],
+    deps = [
+        ":zetasql_expression_extractor",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
