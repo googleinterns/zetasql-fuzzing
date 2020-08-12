@@ -62,7 +62,7 @@ class TypedArg : public Argument {
 class SQLStringArg : public TypedArg<std::string> {
  public:
   using TypedArg::TypedArg;
-  virtual void Accept(zetasql_fuzzer::FuzzTarget& function) override {
+  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
     function.Visit(*this);
   }
 };

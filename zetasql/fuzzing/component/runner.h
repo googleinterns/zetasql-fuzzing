@@ -20,13 +20,43 @@
 #include <functional>
 #include <memory>
 
+#ifdef __OSS_FUZZ__
+#include <filesystem>
+#endif  // __OSS_FUZZ__
+
 #include "zetasql/fuzzing/component/arguments/argument.h"
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
 
+#ifdef __OSS_FUZZ__
+bool DoOssFuzzInit() {
+  namespace fs = std::filesystem;
+  static const int OVERWRITE = 1;
+
+  fs::path originDir;
+  try {
+    originDir = fs::canonical(fs::read_symlink("/proc/self/exe")).parent_path();
+  } catch (const std::exception& e) {
+    return false;
+  }
+  fs::path tzdataDir = originDir / "data/zoneinfo/";
+  if (setenv("TZDIR", tzdataDir.c_str(), OVERWRITE)) {
+    return false;
+  }
+  return true;
+}
+#endif  // __OSS_FUZZ__
+
 template <typename InputType, typename TargetType, typename... Functions>
 void Run(const InputType& input, Functions... functions) {
+#ifdef __OSS_FUZZ__
+  static bool Initialized = zetasql_fuzzer::DoOssFuzzInit();
+  if (!Initialized) {
+    std::abort();
+  }
+#endif  // __OSS_FUZZ__
+
   TargetType target;
   for (const std::function<std::unique_ptr<Argument>(const InputType&)>&
            extractor : {functions...}) {

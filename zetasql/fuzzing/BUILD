@@ -29,10 +29,23 @@ cc_library(
     hdrs = [ "oss_fuzz.h", ]
 )
 
+cc_library(
+    name = "fuzzer_macro",
+    hdrs = [ "fuzzer_macro.h" ],
+    deps = [
+        "@libprotobuf_mutator//:libprotobuf_mutator",
+        "//zetasql/fuzzing/component:runner",
+    ]
+)
+
 cc_fuzzer(
     name = "simple_evaluator_fuzzer",
     srcs = [ "simple_evaluator_fuzzer.cc", ],
-    additional_deps = [ "//zetasql/public:evaluator", ],
+    additional_deps = [ 
+        ":fuzzer_macro", 
+        "//zetasql/fuzzing/component:fuzz_target",
+        "//zetasql/fuzzing/component:prepared_expression_target",
+    ],
 )
 
 cc_proto_fuzzer(
@@ -49,7 +62,7 @@ cc_proto_fuzzer(
     name = "pipelined_expression_fuzzer",
     srcs = [ "pipelined_expression_fuzzer.cc" ],
     additional_deps = [
-        "//zetasql/fuzzing/component:runner",
+        ":fuzzer_macro",
         "//zetasql/fuzzing/component:prepared_expression_target",
         "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
         "//zetasql/fuzzing/protobuf:argument_extractors",

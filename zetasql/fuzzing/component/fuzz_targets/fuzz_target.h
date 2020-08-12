@@ -32,7 +32,7 @@ class FuzzTarget {
   virtual void Execute() = 0;
 
  private:
-  virtual void AbortVisit(const std::string& type) {
+  void AbortVisit(const std::string& type) {
     LOG(FATAL) << "#Visit(" << type
               << ") not implemented. Instantiate this method in the subclass";
   }

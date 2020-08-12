@@ -14,25 +14,16 @@
 // limitations under the License.
 //
 
-#include <cstdint>
-#include <cstddef>
-#include <cstdlib>
-#include <string>
+#include <memory>
 
-#include "zetasql/public/evaluator.h"
-#include "zetasql/fuzzing/oss_fuzz.h"
+#include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
+#include "zetasql/fuzzing/fuzzer_macro.h"
 
-// Fuzz target interface implementaion. This function takes of length *Size* 
-// an array of randomly generated input of uint8_t, and tries to interpret it
-// as a SQL expression.
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
-  #ifdef __OSS_FUZZ__
-    static bool Initialized = zetasql_fuzzer::DoOssFuzzInit();
-    if (!Initialized) { std::abort(); }
-  #endif
+using zetasql_fuzzer::PreparedExpressionTarget;
+using zetasql_fuzzer::SQLStringArg;
 
-  const std::string sqlExp(reinterpret_cast<const char*>(Data), Size);
-  zetasql::PreparedExpression expression(sqlExp);
-  expression.Execute(); // Value ignored
-  return 0;
-}
+// This functions interprets raw fuzzing input as a SQL string, which will be
+// applied to PreparedExpressionTarget
+ZETASQL_SIMPLE_FUZZER(PreparedExpressionTarget,
+                      std::make_unique<SQLStringArg, const std::string&>);
