@@ -20,6 +20,8 @@
 #include <iostream>
 #include <string>
 
+#include "zetasql/base/logging.h"
+
 namespace zetasql_fuzzer {
 
 class SQLStringArg;
@@ -32,10 +34,8 @@ class FuzzTarget {
 
  private:
   virtual void AbortVisit(const std::string& type) {
-    std::cerr << "#Visit(" << type
-              << ") not implemented. Instantiate this method in the subclass"
-              << std::endl;
-    std::abort();
+    LOG(FATAL) << "#Visit(" << type
+              << ") not implemented. Instantiate this method in the subclass";
   }
 };
 

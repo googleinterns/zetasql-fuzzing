@@ -26,6 +26,8 @@ cc_library(
     hdrs = [ 
         "fuzz_targets/fuzz_target.h",
         "arguments/argument.h",
+        "//zetasql/base:logging",
+        "//zetasql/base:statusor"
     ],
 )
 
@@ -35,7 +37,7 @@ cc_library(
     hdrs = [ "fuzz_targets/prepared_expression_target.h"],
     deps = [
         ":fuzz_target",
-        "//zetasql/public:evaluator"
+        "//zetasql/public:evaluator",
     ]
 )
 

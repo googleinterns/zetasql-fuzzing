@@ -14,24 +14,24 @@
 // limitations under the License.
 //
 
-#include "zetasql/public/evaluator.h"
 #include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
+
+#include "zetasql/base/logging.h"
 #include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/public/evaluator.h"
 
 namespace zetasql_fuzzer {
 
 void PreparedExpressionTarget::Visit(SQLStringArg& arg) {
-  sql_expression = arg.ReleaseArg();
+  sql_expression = arg.Release().ValueOrDie();
 }
 
 void PreparedExpressionTarget::Execute() {
-  if (sql_expression) {
-    zetasql::PreparedExpression expression(*sql_expression);
-    expression.Execute();
-  } else {
-    std::cerr << "SQL expression not found" << std::endl;
-    std::abort();
+  if (!sql_expression) {
+    LOG(FATAL) << "SQL expression not found";
   }
+  zetasql::PreparedExpression expression(*sql_expression);
+  expression.Execute();
 }
 
 }  // namespace zetasql_fuzzer

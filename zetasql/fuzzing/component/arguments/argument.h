@@ -17,24 +17,43 @@
 #ifndef ZETASQL_FUZZING_ARGUMENT_H
 #define ZETASQL_FUZZING_ARGUMENT_H
 
-#include <string>
 #include <memory>
+#include <string>
+
+#include "zetasql/base/statusor.h"
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
 
 class Argument {
  public:
+  // Accepts a FuzzTarget as a Visitor to this Argument
   virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
 };
 
 template <typename ArgType>
 class TypedArg : public Argument {
  public:
+  TypedArg() = delete;
+  TypedArg(const TypedArg<ArgType>&) = delete;
+  TypedArg& operator=(const TypedArg<ArgType>&) = delete;
+
+  TypedArg(TypedArg<ArgType>&&) = default;
+  TypedArg& operator=(TypedArg<ArgType>&&) = default;
+
   TypedArg(const ArgType& value) : argument(std::make_unique<ArgType>(value)) {}
   TypedArg(ArgType&& value) : argument(std::make_unique<ArgType>(value)) {}
-  // Use referece or value?
-  std::unique_ptr<ArgType> ReleaseArg() { return std::move(argument); }
+  TypedArg(std::unique_ptr<ArgType>&& pointer) : argument(pointer) {}
+
+  virtual ~TypedArg() = default;
+
+  zetasql_base::StatusOr<std::unique_ptr<ArgType>> Release() {
+    if (argument) {
+      return std::move(argument);
+    }
+    return absl::NotFoundError(
+        "Argument is either not set or has been released.");
+  }
 
  private:
   std::unique_ptr<ArgType> argument;
