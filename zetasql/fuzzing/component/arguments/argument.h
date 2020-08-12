@@ -43,7 +43,7 @@ class TypedArg : public Argument {
 
   TypedArg(const ArgType& value) : argument(std::make_unique<ArgType>(value)) {}
   TypedArg(ArgType&& value) : argument(std::make_unique<ArgType>(value)) {}
-  TypedArg(std::unique_ptr<ArgType>&& pointer) : argument(pointer) {}
+  TypedArg(std::unique_ptr<ArgType>&& pointer) : argument(std::move(pointer)) {}
 
   virtual ~TypedArg() = default;
 

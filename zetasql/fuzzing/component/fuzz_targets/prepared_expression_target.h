@@ -28,8 +28,6 @@ class PreparedExpressionTarget : public FuzzTarget {
 
  private:
   std::unique_ptr<std::string> sql_expression;
-  // std::unique_ptr<zetasql::ParameterValueMap> columns;
-  // std::unique_ptr<zetasql::ParameterValueMap> parameters;
 };
 
 }  // namespace zetasql_fuzzer

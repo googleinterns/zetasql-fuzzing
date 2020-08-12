@@ -31,6 +31,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "argument_test",
+    srcs = [ "arguments/argument_test.cc" ],
+    deps = [
+        ":fuzz_target",
+        "//zetasql/base:statusor",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
 cc_library(
     name = "prepared_expression_target",
     srcs = [ "fuzz_targets/prepared_expression_target.cc" ],

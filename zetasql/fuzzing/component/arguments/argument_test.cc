@@ -14,30 +14,29 @@
 // limitations under the License.
 //
 
-#ifndef ZETASQL_FUZZING_FUZZ_TARGET_H
-#define ZETASQL_FUZZING_FUZZ_TARGET_H
+#include <memory>
+#include "zetasql/fuzzing/component/arguments/argument.h"
 
-#include <iostream>
-#include <string>
-
-#include "zetasql/base/logging.h"
+#include "gtest/gtest.h"
 
 namespace zetasql_fuzzer {
 
-class SQLStringArg;
+namespace {
 
-class FuzzTarget {
- public:
-  virtual void Visit(SQLStringArg& arg) { AbortVisit("SQLStringArg&"); }
-  virtual void Execute() = 0;
+TEST(ArgumentTest, ReleaseValueTest) {
+  SQLStringArg arg("test");
 
- private:
-  virtual void AbortVisit(const std::string& type) {
-    LOG(FATAL) << "#Visit(" << type
-              << ") not implemented. Instantiate this method in the subclass";
-  }
-};
+  std::unique_ptr<std::string> ptr(arg.Release().ValueOrDie());
+  EXPECT_EQ(*ptr, "test");
+  EXPECT_DEATH(arg.Release().ValueOrDie(), "Argument is either not set or has been released");
+}
+
+TEST(ArgumentTest, NullPtrTest) {
+  SQLStringArg arg((std::unique_ptr<std::string>()));
+
+  EXPECT_DEATH(arg.Release().ValueOrDie(), "Argument is either not set or has been released");
+}
+
+}  // namespace
 
 }  // namespace zetasql_fuzzer
-
-#endif  // ZETASQL_FUZZING_FUZZ_TARGET_H
