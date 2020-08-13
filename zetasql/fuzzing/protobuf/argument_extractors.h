@@ -14,16 +14,21 @@
 // limitations under the License.
 //
 
-#include <memory>
+#ifndef ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H
+#define ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H
 
 #include "zetasql/fuzzing/component/arguments/argument.h"
-#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
-#include "zetasql/fuzzing/fuzzer_macro.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
-using zetasql_fuzzer::PreparedExpressionTarget;
-using zetasql_fuzzer::SQLStringArg;
+namespace zetasql_fuzzer {
 
-// This functions interprets raw fuzzing input as a SQL string, which will be
-// applied to PreparedExpressionTarget
-ZETASQL_SIMPLE_FUZZER(PreparedExpressionTarget,
-                      std::make_unique<SQLStringArg, const std::string&>);
+std::unique_ptr<Argument> GetProtoExpr(const zetasql_expression_grammar::Expression& expression) {
+  zetasql_fuzzer::internal::ProtoExprExtractor extractor;
+  extractor.Extract(expression);
+  return std::make_unique<SQLStringArg>(extractor.Data());
+}
+
+}  // namespace zetasql_fuzzer
+
+#endif  //ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H

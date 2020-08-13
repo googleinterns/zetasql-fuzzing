@@ -14,16 +14,30 @@
 // limitations under the License.
 //
 
-#include <memory>
+#ifndef ZETASQL_FUZZING_FUZZ_TARGET_H
+#define ZETASQL_FUZZING_FUZZ_TARGET_H
 
-#include "zetasql/fuzzing/component/arguments/argument.h"
-#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
-#include "zetasql/fuzzing/fuzzer_macro.h"
+#include <iostream>
+#include <string>
 
-using zetasql_fuzzer::PreparedExpressionTarget;
-using zetasql_fuzzer::SQLStringArg;
+#include "zetasql/base/logging.h"
 
-// This functions interprets raw fuzzing input as a SQL string, which will be
-// applied to PreparedExpressionTarget
-ZETASQL_SIMPLE_FUZZER(PreparedExpressionTarget,
-                      std::make_unique<SQLStringArg, const std::string&>);
+namespace zetasql_fuzzer {
+
+class SQLStringArg;
+
+class FuzzTarget {
+ public:
+  virtual void Visit(SQLStringArg& arg) { AbortVisit("SQLStringArg&"); }
+  virtual void Execute() = 0;
+
+ private:
+  void AbortVisit(const std::string& type) {
+    LOG(FATAL) << "#Visit(" << type
+              << ") not implemented. Instantiate this method in the subclass";
+  }
+};
+
+}  // namespace zetasql_fuzzer
+
+#endif  // ZETASQL_FUZZING_FUZZ_TARGET_H

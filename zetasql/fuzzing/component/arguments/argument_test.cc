@@ -15,15 +15,28 @@
 //
 
 #include <memory>
-
 #include "zetasql/fuzzing/component/arguments/argument.h"
-#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
-#include "zetasql/fuzzing/fuzzer_macro.h"
 
-using zetasql_fuzzer::PreparedExpressionTarget;
-using zetasql_fuzzer::SQLStringArg;
+#include "gtest/gtest.h"
 
-// This functions interprets raw fuzzing input as a SQL string, which will be
-// applied to PreparedExpressionTarget
-ZETASQL_SIMPLE_FUZZER(PreparedExpressionTarget,
-                      std::make_unique<SQLStringArg, const std::string&>);
+namespace zetasql_fuzzer {
+
+namespace {
+
+TEST(ArgumentTest, ReleaseValueTest) {
+  SQLStringArg arg("test");
+
+  std::unique_ptr<std::string> ptr(arg.Release().ValueOrDie());
+  EXPECT_EQ(*ptr, "test");
+  EXPECT_DEATH(arg.Release().ValueOrDie(), "Argument is either not set or has been released");
+}
+
+TEST(ArgumentTest, NullPtrTest) {
+  SQLStringArg arg((std::unique_ptr<std::string>()));
+
+  EXPECT_DEATH(arg.Release().ValueOrDie(), "Argument is either not set or has been released");
+}
+
+}  // namespace
+
+}  // namespace zetasql_fuzzer
