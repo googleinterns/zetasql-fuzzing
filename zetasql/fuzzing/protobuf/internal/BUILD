@@ -24,13 +24,22 @@ package(
 )
 
 cc_library(
+    name = "syntax_tree_visitor",
+    hdrs = [ "syntax_tree_visitor.h", ],
+    deps = [
+        "//zetasql/fuzzing/protobuf:parameter_cc_proto",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+    ]
+)
+
+cc_library(
     name = "zetasql_expression_extractor",
     srcs = [ "zetasql_expression_extractor.cc", ],
     hdrs = [ "zetasql_expression_extractor.h", ],
     deps = [
-        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        ":syntax_tree_visitor",
+        "//zetasql/base:logging",
         "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_prod",
     ]
 )
 
@@ -39,8 +48,29 @@ cc_test(
     srcs = [ "zetasql_expression_extractor_test.cc", ],
     deps = [
         ":zetasql_expression_extractor",
-        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        "//zetasql/public:type",
         "@com_google_googletest//:gtest_main",
     ]
 )
 
+cc_library(
+    name = "parameter_value_map_extractor",
+    srcs = [ "parameter_value_map_extractor.cc" ],
+    hdrs = [ "parameter_value_map_extractor.h" ],
+    deps = [
+        ":syntax_tree_visitor",
+        "//zetasql/base:logging",
+        "//zetasql/public:value",
+        "//zetasql/public:evaluator_base"
+    ]
+)
+
+cc_test(
+    name = "parameter_value_map_extractor_test",
+    srcs = [ "parameter_value_map_extractor_test.cc" ],
+    deps = [
+        ":parameter_value_map_extractor",
+        "//zetasql/public:numeric_value",
+        "@com_google_googletest//:gtest_main",
+    ]
+)

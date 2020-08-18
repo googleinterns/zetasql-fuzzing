@@ -59,13 +59,21 @@ cc_proto_library(
     deps = [ ":zetasql_expression_proto", ],
 )
 
+cc_proto_library(
+    name = "parameter_cc_proto",
+    deps = [ ":parameter_proto"],
+)
+
 proto_library(
     name = "zetasql_expression_proto",
     srcs = [ "zetasql_expression_grammar.proto", ],
-    deps = [ ":parameter_proto", ]
+    deps = [ 
+        ":parameter_proto", 
+    ]
 )
 
 proto_library(
     name = "parameter_proto",
-    srcs = [ "parameter_grammar.proto", ]
+    srcs = [ "parameter_grammar.proto", ],
+    deps = [ "//zetasql/public:type_proto" ]
 )

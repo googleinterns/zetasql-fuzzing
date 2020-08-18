@@ -22,43 +22,13 @@ package zetasql_expression_grammar;
 
 message Expression {
     oneof expr_oneof {
-        LiteralExpr literal = 1;
+        parameter_grammar.Value value = 1;
         CompoundExpr expr = 2;
     }
     required parameter_grammar.Default default_value = 3;
     required bool parenthesized = 4;
     optional parameter_grammar.Whitespace leading_pad = 5;
     optional parameter_grammar.Whitespace trailing_pad = 6;
-}
-
-message LiteralExpr {
-    enum SpecialValue {
-        V_NULL = 0; // variable 'NULL' will be translated to NULL in C, causing failure
-    }
-    oneof literal_oneof {
-        SpecialValue special_literal = 1;
-        bool bool_literal = 2;
-        string string_literal = 3;
-        bytes bytes_literal = 4;
-        IntegerLiteral integer_literal = 5;
-        NumericLiteral numeric_literal = 6;
-    }
-    required parameter_grammar.Default default_value = 7;
-}
-
-message IntegerLiteral {
-    oneof integer_oneof {
-        int32 int32_literal = 1;
-        uint32 uint32_literal = 2;
-        int64 int64_literal = 3;
-        uint64 uint64_literal = 4;
-    }
-    required parameter_grammar.Default default_value = 5;
-}
-
-// TODO: Support high precision value representation
-message NumericLiteral {
-    required bytes value = 1;
 }
 
 message CompoundExpr {

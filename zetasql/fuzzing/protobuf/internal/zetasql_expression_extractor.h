@@ -17,24 +17,30 @@
 #ifndef ZETASQL_FUZZING_ZETASQL_EXPRESSION_EXTRACTOR_H
 #define ZETASQL_FUZZING_ZETASQL_EXPRESSION_EXTRACTOR_H
 
+#include <string>
+
 #include "absl/strings/str_cat.h"
-#include "gtest/gtest_prod.h"
-#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
+#include "zetasql/fuzzing/protobuf/internal/syntax_tree_visitor.h"
 
 namespace zetasql_fuzzer {
 namespace internal {
 
-class ProtoExprExtractor {
+class SQLExprExtractor : public ProtoExprExtractor<std::string>,
+                         public LiteralExtractor<std::string> {
  public:
-  void Extract(const zetasql_expression_grammar::Expression& expr);
-  void Extract(const zetasql_expression_grammar::LiteralExpr& literal);
-  void Extract(const zetasql_expression_grammar::IntegerLiteral& integer);
-  void Extract(const zetasql_expression_grammar::NumericLiteral& numeric);
-  void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr);
-  void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation);
+  void Extract(const parameter_grammar::Literal& literal) override;
+  void Extract(const parameter_grammar::IntegerLiteral& integer) override;
+  void Extract(const parameter_grammar::NumericLiteral& numeric) override;
+
+  void Extract(const parameter_grammar::Identifier& id);
   void Extract(const parameter_grammar::Whitespace& whitespaces);
-  inline std::string Data() { return builder_; };
+
+  void Extract(const parameter_grammar::Value& value) override;
+
+  void Extract(const zetasql_expression_grammar::Expression& expr) override;
+  void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr) override;
+  void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation) override;
+  inline const std::string& Data() override { return builder_; };
 
  protected:
   template <typename T>
@@ -48,10 +54,6 @@ class ProtoExprExtractor {
  private:
   std::string builder_;
 
-  inline void Exit(const std::string& error) {
-    std::cerr << error << std::endl;
-    std::abort();
-  }
   inline void Quote(const std::string& content, const std::string& quote);
   inline void ExtractBinaryOperator(
       const zetasql_expression_grammar::BinaryOperation_Operator binary);
