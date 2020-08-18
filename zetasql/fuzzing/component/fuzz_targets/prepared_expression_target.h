@@ -24,10 +24,13 @@ namespace zetasql_fuzzer {
 class PreparedExpressionTarget : public FuzzTarget {
  public:
   void Visit(SQLStringArg& sql) override;
+  void Visit(ParameterValueMapArg& arg) override;
   void Execute() override;
 
  private:
   std::unique_ptr<std::string> sql_expression;
+  std::unique_ptr<zetasql::ParameterValueMap> columns =
+      std::make_unique<zetasql::ParameterValueMap>();
 };
 
 }  // namespace zetasql_fuzzer

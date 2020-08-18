@@ -17,12 +17,13 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 using zetasql_expression_grammar::Expression;
-using zetasql_expression_grammar::LiteralExpr;
-using zetasql_expression_grammar::IntegerLiteral;
-using zetasql_expression_grammar::NumericLiteral;
+using parameter_grammar::Literal;
+using parameter_grammar::IntegerLiteral;
+using parameter_grammar::NumericLiteral;
 using zetasql_expression_grammar::CompoundExpr;
 using zetasql_expression_grammar::BinaryOperation;
 
@@ -33,7 +34,7 @@ namespace zetasql_fuzzer {
 // Forward declaration
 TO_STRING(Expression, expr);
 
-TO_STRING(LiteralExpr, lit_expr);
+TO_STRING(Literal, lit_expr);
 TO_STRING(IntegerLiteral, integer);
 TO_STRING(NumericLiteral, numeric);
 
@@ -57,8 +58,8 @@ inline std::string Padded(const std::string& s) {
 TO_STRING(Expression, expr) {
   using ExprType = Expression::ExprOneofCase;
   switch (expr.expr_oneof_case()) {
-    case ExprType::kLiteral:
-      return LiteralExprToString(expr.literal());
+    case ExprType::kValue:
+      return LiteralToString(expr.value().literal());
     case ExprType::kExpr:
       return CompoundExprToString(expr.expr());
     default:
@@ -66,16 +67,11 @@ TO_STRING(Expression, expr) {
   }
 }
 
-TO_STRING(LiteralExpr, literal) {
-  using LitExprType = LiteralExpr::LiteralOneofCase;
+TO_STRING(Literal, literal) {
+  using LitExprType = Literal::LiteralOneofCase;
   switch (literal.literal_oneof_case()) {
-    case LitExprType::kSpecialLiteral:
-      switch (literal.special_literal()) {
-        case LiteralExpr::V_NULL:
-          return "NULL";
-        default:
-          HandleUndefined("Undefined Special Literal");
-      }
+    case LitExprType::kNullLiteral:
+      return "NULL";
     case LitExprType::kBoolLiteral:
       return literal.bool_literal() ? "TRUE" : "FALSE";
     case LitExprType::kBytesLiteral:

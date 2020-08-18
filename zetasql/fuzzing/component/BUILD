@@ -26,9 +26,12 @@ cc_library(
     hdrs = [ 
         "fuzz_targets/fuzz_target.h",
         "arguments/argument.h",
-        "//zetasql/base:logging",
-        "//zetasql/base:statusor"
     ],
+    deps = [
+        "//zetasql/base:logging",
+        "//zetasql/base:statusor",
+        "//zetasql/public:evaluator"
+    ]
 )
 
 cc_test(

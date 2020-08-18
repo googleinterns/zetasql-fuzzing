@@ -79,45 +79,36 @@ INSTANTIATE_TEST_SUITE_P(
       std::make_tuple(ExtractableNullLiteral(zetasql::TypeKind::TYPE_PROTO), zetasql::Value())
     ));
 
-// TODO: Handle default value
+template <typename LiteralType>
+ExtractLiteralCallback ExtractableEmptyLiteral() {
+  return []() {
+    return internal::LiteralValueExtractor::Extract((LiteralType()));
+  };
+}
 
-// template <typename ExprType>
-// ExtractLiteralCallback ExtractableEmptyExpression() {
-//   return []() {
-//     ExprType expression;
-//     return internal::LiteralValueExtractor::Extract(expression);
-//   };
-// }
+INSTANTIATE_TEST_SUITE_P(
+    EmptyLiteralTest, LiteralValueExtractorTest,
+    ::testing::Combine(
+        ::testing::Values(ExtractableEmptyLiteral<Literal>(),
+                          ExtractableEmptyLiteral<IntegerLiteral>()),
+        ::testing::Values(zetasql::Value::Bytes(""))));
 
-// INSTANTIATE_TEST_SUITE_P(
-//     EmptyExpressionTest, LiteralValueExtractorTest,
-//     ::testing::Combine(
-//         ::testing::Values(ExtractableEmptyExpression<Expression>(),
-//                           ExtractableEmptyExpression<Literal>(),
-//                           ExtractableEmptyExpression<IntegerLiteral>(),
-//                           ExtractableEmptyExpression<CompoundExpr>()),
-//         ::testing::Values("")));
+template <typename LiteralType>
+ExtractLiteralCallback ExtractableDefaultValue(const std::string& value) {
+  return [value]() {
+    LiteralType literal;
+    literal.mutable_default_value()->set_content(value);
+    return internal::LiteralValueExtractor::Extract(literal);
+  };
+}
 
-// template <typename ExprType>
-// ExtractLiteralCallback ExtractableDefaultValue(const std::string& value) {
-//   return [value](ParameterValueMapExtractor& extractor) {
-//     ExprType expression;
-//     expression.mutable_default_value()->set_content(value);
-//     return internal::LiteralValueExtractor::Extract(expression);
-//   };
-// }
-
-// INSTANTIATE_TEST_SUITE_P(
-//     DefaultOneOfValueTest, LiteralValueExtractorTest,
-//     ::testing::Values(
-//         std::make_tuple(ExtractableDefaultValue<Expression>("default"),
-//                         "default"),
-//         std::make_tuple(ExtractableDefaultValue<Literal>("default_lit"),
-//                         "default_lit"),
-//         std::make_tuple(ExtractableDefaultValue<IntegerLiteral>("default_int"),
-//                         "default_int"),
-//         std::make_tuple(ExtractableDefaultValue<CompoundExpr>("default_expr"),
-//                         "default_expr")));
+INSTANTIATE_TEST_SUITE_P(
+    DefaultOneOfValueTest, LiteralValueExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableDefaultValue<Literal>("default_lit"),
+                        zetasql::Value::Bytes("default_lit")),
+        std::make_tuple(ExtractableDefaultValue<IntegerLiteral>("default_int"),
+                        zetasql::Value::Bytes("default_int"))));
 
 ExtractLiteralCallback ExtractableStringLiteral(
     const std::string& value) {
@@ -211,7 +202,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
       std::make_tuple(ExtractableNumeric("12345"), zetasql::Value::Numeric(zetasql::NumericValue(12345))),
       std::make_tuple(ExtractableNumeric("123.45"), zetasql::Value::Numeric(zetasql::NumericValue::FromString("123.45").ValueOrDie())),
-      std::make_tuple(ExtractableNumeric("1234sdf"), zetasql::Value())
+      std::make_tuple(ExtractableNumeric("1234sdf"), zetasql::Value::Numeric(zetasql::NumericValue(0)))
     ));
 
 TEST(ParameterValueMapTest, NonvariableTest) {

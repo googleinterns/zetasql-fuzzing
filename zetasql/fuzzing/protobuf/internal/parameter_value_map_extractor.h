@@ -29,17 +29,18 @@ zetasql::Value Extract(const parameter_grammar::Literal& literal);
 zetasql::Value Extract(const parameter_grammar::IntegerLiteral& integer);
 zetasql::Value Extract(const parameter_grammar::NumericLiteral& numeric);
 zetasql::Value Extract(zetasql::TypeKind null_type);
+template <typename T>
+inline zetasql::Value ExtractDefault(const T& literal) {
+  return zetasql::Value::Bytes(literal.default_value().content());
+}
 }  // namespace LiteralValueExtractor
 
 class ParameterValueMapExtractor : public ProtoExprExtractor<zetasql::ParameterValueMap> {
  public:
-
   void Extract(const parameter_grammar::Value& value) override;
-
   void Extract(const zetasql_expression_grammar::Expression& expr) override;
   void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr) override;
   void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation) override;
-
   inline const zetasql::ParameterValueMap& Data() override { return builder_; }
 
  private:

@@ -45,8 +45,7 @@ zetasql::Value Extract(const parameter_grammar::Literal& literal) {
     case Literal::kNumericLiteral:
       return Extract(literal.numeric_literal());
     default:
-      LOG(FATAL) << "Unhandled LiteralExpr to Value conversion at "
-                    "ParameterValueMapExtractor";
+      return ExtractDefault(literal);
   }
 }
 
@@ -61,15 +60,16 @@ zetasql::Value Extract(const parameter_grammar::IntegerLiteral& integer) {
     case IntegerLiteral::kUint64Literal:
       return zetasql::Value::Uint64(integer.uint64_literal());
     default:
-      LOG(FATAL) << "Unhandled IntegerLiteral to Value conversion at "
-                    "ParameterValueMapExtractor";
+      return ExtractDefault(integer);
   }
 }
 
 zetasql::Value Extract(const parameter_grammar::NumericLiteral& numeric) {
-  // TODO: Handle ValueOrDie
-  return zetasql::Value::Numeric(
-      zetasql::NumericValue::FromString(numeric.value()).ValueOrDie());
+  auto value(zetasql::NumericValue::FromString(numeric.value()));
+  if (value) {
+    return zetasql::Value::Numeric(value.value());
+  }
+  return zetasql::Value::Numeric((zetasql::NumericValue()));
 }
 
 zetasql::Value Extract(zetasql::TypeKind null_type) {

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <optional>
 
 #include "gtest/gtest.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
@@ -210,6 +211,31 @@ void InsertWhitespaceHelper(Whitespace& expression, const std::vector<Whitespace
     expression.add_additional(*it);
   }
 }
+
+InvokeExtractCallback ExtractableValue(
+    const std::string& content, std::optional<std::string> identifier,
+    std::optional<parameter_grammar::Identifier::Type> type) {
+  return [content, identifier, type](SQLExprExtractor& extractor) {
+    parameter_grammar::Value value;
+    if (identifier) {
+      value.mutable_as_variable()->set_name(*identifier);
+      value.mutable_as_variable()->set_type(*type);
+    } else {
+      value.clear_as_variable();
+    }
+    value.mutable_literal()->mutable_default_value()->set_content(content);
+    extractor.Extract(value);
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ValueTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableValue("is column", "var1", parameter_grammar::Identifier::COLUMN), "var1"),
+        std::make_tuple(ExtractableValue("is literal", {}, {}), "is literal"),
+        std::make_tuple(ExtractableValue("is parameter", "var2", parameter_grammar::Identifier::PARAMETER), "@var2")
+    )
+);
 
 InvokeExtractCallback ExtractableWhitespaces(const std::vector<Whitespace::Type>& value) {
   return [value](SQLExprExtractor& extractor) {

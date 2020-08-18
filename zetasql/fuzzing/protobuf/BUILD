@@ -31,6 +31,7 @@ cc_library(
         ":zetasql_expression_cc_proto",
         "//zetasql/fuzzing/component:fuzz_target",
         "//zetasql/fuzzing/protobuf/internal:zetasql_expression_extractor",
+        "//zetasql/fuzzing/protobuf/internal:parameter_value_map_extractor",
     ]
 )
 
@@ -38,7 +39,6 @@ cc_test(
     name = "zetasql_expression_proto_to_string_test",
     srcs = ["zetasql_expression_proto_to_string_test.cc"],
     deps = [
-        ":zetasql_expression_cc_proto",
         ":zetasql_expression_proto_to_string",
         "@com_google_googletest//:gtest_main",
     ],

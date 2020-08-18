@@ -21,14 +21,17 @@
 #include <string>
 
 #include "zetasql/base/logging.h"
+#include "zetasql/public/evaluator_base.h"
 
 namespace zetasql_fuzzer {
 
 class SQLStringArg;
+class ParameterValueMapArg;
 
 class FuzzTarget {
  public:
   virtual void Visit(SQLStringArg& arg) { AbortVisit("SQLStringArg&"); }
+  virtual void Visit(ParameterValueMapArg& arg) { AbortVisit("ParameterValueMapArg&"); }
   virtual void Execute() = 0;
 
  private:
