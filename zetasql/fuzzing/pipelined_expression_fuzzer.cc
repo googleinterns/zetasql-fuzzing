@@ -20,10 +20,11 @@
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 using zetasql_expression_grammar::Expression;
+using zetasql_fuzzer::GetParam;
 using zetasql_fuzzer::GetProtoExpr;
 using zetasql_fuzzer::PreparedExpressionTarget;
+
 using As = zetasql_fuzzer::ParameterValueMapArg::As;
 
 ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionTarget, GetProtoExpr,
-                     zetasql_fuzzer::GetParam<As::COLUMNS>);
-// , GetColumns);
+                     GetParam<As::COLUMNS>, GetParam<As::PARAMETERS>);

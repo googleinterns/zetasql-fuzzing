@@ -31,7 +31,9 @@ void PreparedExpressionTarget::Visit(ParameterValueMapArg& arg) {
     case ParameterValueMapArg::As::COLUMNS:
       columns = arg.Release().ValueOrDie();
       return;
-
+    case ParameterValueMapArg::As::PARAMETERS:
+      parameters = arg.Release().ValueOrDie();
+      return;
     default:
       LOG(FATAL)
           << "Unhandled ParameterValueMapArg in PreparedExpressionTarget";
@@ -43,7 +45,7 @@ void PreparedExpressionTarget::Execute() {
     LOG(FATAL) << "SQL expression not found";
   }
   zetasql::PreparedExpression expression(*sql_expression);
-  expression.Execute(*columns);
+  expression.Execute(*columns, *parameters);
 }
 
 }  // namespace zetasql_fuzzer
