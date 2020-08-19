@@ -54,13 +54,32 @@ cc_test(
 )
 
 cc_library(
+    name = "literal_value_extractor",
+    srcs = [ "literal_value_extractor.cc" ],
+    hdrs = [ "literal_value_extractor.h" ],
+    deps = [
+        "//zetasql/public:value",
+        "//zetasql/fuzzing/protobuf:parameter_cc_proto",
+    ]
+)
+
+cc_test(
+    name = "literal_value_extractor_test",
+    srcs = [ "literal_value_extractor_test.cc" ],
+    deps = [
+        ":literal_value_extractor",
+        "//zetasql/public:numeric_value",
+        "@com_google_googletest//:gtest_main",
+    ]
+)
+
+cc_library(
     name = "parameter_value_map_extractor",
     srcs = [ "parameter_value_map_extractor.cc" ],
     hdrs = [ "parameter_value_map_extractor.h" ],
     deps = [
         ":syntax_tree_visitor",
-        "//zetasql/base:logging",
-        "//zetasql/public:value",
+        ":literal_value_extractor",
         "//zetasql/public:evaluator_base"
     ]
 )
@@ -70,7 +89,6 @@ cc_test(
     srcs = [ "parameter_value_map_extractor_test.cc" ],
     deps = [
         ":parameter_value_map_extractor",
-        "//zetasql/public:numeric_value",
         "@com_google_googletest//:gtest_main",
     ]
 )

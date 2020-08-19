@@ -34,6 +34,13 @@ class FuzzTarget {
   virtual void Visit(ParameterValueMapArg& arg) { AbortVisit("ParameterValueMapArg&"); }
   virtual void Execute() = 0;
 
+ protected:
+  static const zetasql::ParameterValueMap& GetOrDefault(
+      const std::unique_ptr<zetasql::ParameterValueMap>& ptr) {
+    static const zetasql::ParameterValueMap DEFAULT_VALUE_MAP;
+    return ptr ? *ptr : DEFAULT_VALUE_MAP;
+  }
+
  private:
   void AbortVisit(const std::string& type) {
     LOG(FATAL) << "#Visit(" << type

@@ -23,16 +23,16 @@
 namespace zetasql_fuzzer {
 
 void PreparedExpressionTarget::Visit(SQLStringArg& arg) {
-  sql_expression = arg.Release().ValueOrDie();
+  sql_expression_ = arg.Release().ValueOrDie();
 }
 
 void PreparedExpressionTarget::Visit(ParameterValueMapArg& arg) {
   switch (arg.GetIntent()) {
     case ParameterValueMapArg::As::COLUMNS:
-      columns = arg.Release().ValueOrDie();
+      columns_ = arg.Release().ValueOrDie();
       return;
     case ParameterValueMapArg::As::PARAMETERS:
-      parameters = arg.Release().ValueOrDie();
+      parameters_ = arg.Release().ValueOrDie();
       return;
     default:
       LOG(FATAL)
@@ -41,11 +41,11 @@ void PreparedExpressionTarget::Visit(ParameterValueMapArg& arg) {
 }
 
 void PreparedExpressionTarget::Execute() {
-  if (!sql_expression) {
+  if (!sql_expression_) {
     LOG(FATAL) << "SQL expression not found";
   }
-  zetasql::PreparedExpression expression(*sql_expression);
-  expression.Execute(*columns, *parameters);
+  zetasql::PreparedExpression expression(*sql_expression_);
+  expression.Execute(GetOrDefault(columns_), GetOrDefault(parameters_));
 }
 
 }  // namespace zetasql_fuzzer

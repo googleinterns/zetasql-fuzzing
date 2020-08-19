@@ -19,21 +19,9 @@
 
 #include "zetasql/fuzzing/protobuf/internal/syntax_tree_visitor.h"
 #include "zetasql/public/evaluator_base.h"
-#include "zetasql/public/value.h"
 
 namespace zetasql_fuzzer {
 namespace internal {
-
-namespace LiteralValueExtractor {
-zetasql::Value Extract(const parameter_grammar::Literal& literal);
-zetasql::Value Extract(const parameter_grammar::IntegerLiteral& integer);
-zetasql::Value Extract(const parameter_grammar::NumericLiteral& numeric);
-zetasql::Value Extract(zetasql::TypeKind null_type);
-template <typename T>
-inline zetasql::Value ExtractDefault(const T& literal) {
-  return zetasql::Value::Bytes(literal.default_value().content());
-}
-}  // namespace LiteralValueExtractor
 
 class ParameterValueMapExtractor : public ProtoExprExtractor<zetasql::ParameterValueMap> {
  public:

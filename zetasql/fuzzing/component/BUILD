@@ -30,7 +30,7 @@ cc_library(
     deps = [
         "//zetasql/base:logging",
         "//zetasql/base:statusor",
-        "//zetasql/public:evaluator"
+        "//zetasql/public:evaluator_base"
     ]
 )
 
