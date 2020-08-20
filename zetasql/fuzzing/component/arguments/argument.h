@@ -22,12 +22,13 @@
 
 #include "zetasql/base/statusor.h"
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
-#include "zetasql/public/evaluator_base.h"
 
 namespace zetasql_fuzzer {
 
 class Argument {
  public:
+  virtual ~Argument() = default;
+
   // Accepts a FuzzTarget as a Visitor to this Argument
   virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
 };
@@ -66,36 +67,6 @@ class SQLStringArg : public TypedArg<std::string> {
   void Accept(zetasql_fuzzer::FuzzTarget& function) override {
     function.Visit(*this);
   }
-};
-
-class ParameterValueMapArg : public TypedArg<zetasql::ParameterValueMap> {
- public:
-  enum As { COLUMNS, PARAMETERS };
-
-  ParameterValueMapArg() = delete;
-  ParameterValueMapArg(const ParameterValueMapArg&) = delete;
-  ParameterValueMapArg& operator=(const ParameterValueMapArg&) = delete;
-
-  ParameterValueMapArg(ParameterValueMapArg&&) = default;
-  ParameterValueMapArg& operator=(ParameterValueMapArg&&) = default;
-
-  ParameterValueMapArg(const zetasql::ParameterValueMap& value, As intent)
-      : TypedArg(value), intent_(intent) {}
-  ParameterValueMapArg(zetasql::ParameterValueMap&& value, As intent)
-      : TypedArg(value), intent_(intent) {}
-  ParameterValueMapArg(std::unique_ptr<zetasql::ParameterValueMap> pointer, As intent)
-      : TypedArg(std::move(pointer)), intent_(intent) {}
-
-  virtual ~ParameterValueMapArg() = default;
-
-  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
-    function.Visit(*this);
-  }
-
-  As GetIntent() { return intent_; }
-
- private:
-  As intent_;
 };
 }  // namespace zetasql_fuzzer
 

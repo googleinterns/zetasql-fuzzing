@@ -34,6 +34,14 @@ cc_library(
     ]
 )
 
+cc_library(
+    name = "parameter_value_argument",
+    hdrs = [ "arguments/parameter_value_argument.h" ],
+    deps = [
+        ":fuzz_target",
+    ]
+)
+
 cc_test(
     name = "argument_test",
     srcs = [ "arguments/argument_test.cc" ],
@@ -50,6 +58,7 @@ cc_library(
     hdrs = [ "fuzz_targets/prepared_expression_target.h"],
     deps = [
         ":fuzz_target",
+        ":parameter_value_argument",
         "//zetasql/public:evaluator",
     ]
 )

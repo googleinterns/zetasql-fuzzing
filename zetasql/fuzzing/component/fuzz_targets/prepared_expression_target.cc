@@ -18,6 +18,7 @@
 
 #include "zetasql/base/logging.h"
 #include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/fuzzing/component/arguments/parameter_value_argument.h"
 #include "zetasql/public/evaluator.h"
 
 namespace zetasql_fuzzer {
@@ -28,10 +29,10 @@ void PreparedExpressionTarget::Visit(SQLStringArg& arg) {
 
 void PreparedExpressionTarget::Visit(ParameterValueMapArg& arg) {
   switch (arg.GetIntent()) {
-    case ParameterValueMapArg::As::COLUMNS:
+    case ParameterValueAs::COLUMNS:
       columns_ = arg.Release().ValueOrDie();
       return;
-    case ParameterValueMapArg::As::PARAMETERS:
+    case ParameterValueAs::PARAMETERS:
       parameters_ = arg.Release().ValueOrDie();
       return;
     default:

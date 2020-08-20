@@ -26,12 +26,14 @@ namespace internal {
 template <typename Result>
 class Extractor {
  public:
+  virtual ~Extractor() = default;
   virtual const Result& Data() = 0;
 };
 
 template <typename Result>
 class LiteralExtractor : public Extractor<Result> {
  public:
+  virtual ~LiteralExtractor() = default;
   virtual void Extract(const parameter_grammar::Literal& literal) = 0;
   virtual void Extract(const parameter_grammar::IntegerLiteral& integer) = 0;
   virtual void Extract(const parameter_grammar::NumericLiteral& numeric) = 0;
@@ -40,8 +42,9 @@ class LiteralExtractor : public Extractor<Result> {
 template <typename Result>
 class ProtoExprExtractor : public Extractor<Result> {
  public:
-  virtual void Extract(const parameter_grammar::Value& value) = 0;
+  virtual ~ProtoExprExtractor() = default;
 
+  virtual void Extract(const parameter_grammar::Value& value) = 0;
   virtual void Extract(const zetasql_expression_grammar::Expression& expr) = 0;
   virtual void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr) = 0;
   virtual void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation) = 0;

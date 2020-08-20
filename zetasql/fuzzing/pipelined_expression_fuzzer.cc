@@ -24,7 +24,7 @@ using zetasql_fuzzer::GetParam;
 using zetasql_fuzzer::GetProtoExpr;
 using zetasql_fuzzer::PreparedExpressionTarget;
 
-using As = zetasql_fuzzer::ParameterValueMapArg::As;
+using As = zetasql_fuzzer::ParameterValueAs;
 
 ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionTarget, GetProtoExpr,
                      GetParam<As::COLUMNS>, GetParam<As::PARAMETERS>);

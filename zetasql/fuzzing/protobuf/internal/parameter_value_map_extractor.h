@@ -25,6 +25,17 @@ namespace internal {
 
 class ParameterValueMapExtractor : public ProtoExprExtractor<zetasql::ParameterValueMap> {
  public:
+  ParameterValueMapExtractor() = delete;
+  ParameterValueMapExtractor(const ParameterValueMapExtractor&) = default;
+  ParameterValueMapExtractor& operator=(const ParameterValueMapExtractor&) = default;
+  ParameterValueMapExtractor(ParameterValueMapExtractor&&) = default;
+  ParameterValueMapExtractor& operator=(ParameterValueMapExtractor&&) = default;
+
+  ParameterValueMapExtractor(parameter_grammar::Identifier::Type type)
+      : extract_type_(type) {}
+
+  virtual ~ParameterValueMapExtractor() = default;
+
   void Extract(const parameter_grammar::Value& value) override;
   void Extract(const zetasql_expression_grammar::Expression& expr) override;
   void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr) override;
@@ -33,6 +44,7 @@ class ParameterValueMapExtractor : public ProtoExprExtractor<zetasql::ParameterV
 
  private:
   zetasql::ParameterValueMap builder_;
+  parameter_grammar::Identifier::Type extract_type_;
 };
 
 }  // namespace internal

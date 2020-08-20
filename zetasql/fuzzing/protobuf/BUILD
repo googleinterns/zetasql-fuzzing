@@ -26,12 +26,15 @@ package(
 
 cc_library(
     name = "argument_extractors",
+    srcs = [ "argument_extractors.cc" ],
     hdrs = [ "argument_extractors.h", ],
     deps = [
         ":zetasql_expression_cc_proto",
         "//zetasql/fuzzing/component:fuzz_target",
+        "//zetasql/fuzzing/component:parameter_value_argument",
         "//zetasql/fuzzing/protobuf/internal:zetasql_expression_extractor",
         "//zetasql/fuzzing/protobuf/internal:parameter_value_map_extractor",
+        "//zetasql/base:logging",
     ]
 )
 

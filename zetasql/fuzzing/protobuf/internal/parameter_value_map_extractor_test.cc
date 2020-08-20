@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 
+using parameter_grammar::Identifier;
 using zetasql_expression_grammar::BinaryOperation;
 using zetasql_expression_grammar::CompoundExpr;
 using zetasql_expression_grammar::Expression;
@@ -29,32 +30,36 @@ using zetasql_fuzzer::internal::ParameterValueMapExtractor;
 
 namespace zetasql_fuzzer {
 namespace {
-  
-TEST(ParameterValueMapTest, NonvariableTest) {
+
+class ParameterValueMapExtractorTest : public ::testing::TestWithParam<Identifier::Type> {};
+
+TEST_P(ParameterValueMapExtractorTest, NonvariableTest) {
   parameter_grammar::Value value;
   value.clear_as_variable();
   value.mutable_literal()->set_bytes_literal("test");
 
-  ParameterValueMapExtractor extractor;
+  ParameterValueMapExtractor extractor(GetParam());
   extractor.Extract(value);
   EXPECT_EQ(extractor.Data(), ((zetasql::ParameterValueMap())));
 }
 
-TEST(ParameterValueMapTest, VariableTest) {
+TEST_P(ParameterValueMapExtractorTest, VariableTest) {
   parameter_grammar::Value value;
   value.mutable_as_variable()->set_name("test_var");
+  value.mutable_as_variable()->set_type(GetParam());
   value.mutable_literal()->set_bytes_literal("test");
 
-  ParameterValueMapExtractor extractor;
+  ParameterValueMapExtractor extractor(GetParam());
   extractor.Extract(value);
   EXPECT_EQ(extractor.Data(),
             ((zetasql::ParameterValueMap{
                 {"test_var", zetasql::Value::Bytes("test")}})));
 }
 
-TEST(ParameterValueMapTest, BinaryExprTest) {
+TEST_P(ParameterValueMapExtractorTest, BinaryExprTest) {
   BinaryOperation binary;
   binary.mutable_lhs()->mutable_value()->mutable_as_variable()->set_name("lhs");
+  binary.mutable_lhs()->mutable_value()->mutable_as_variable()->set_type(GetParam());
   binary.mutable_lhs()->mutable_value()->mutable_literal()->set_bytes_literal(
       "TeSt");
   binary.set_op(BinaryOperation::PLUS);
@@ -64,15 +69,16 @@ TEST(ParameterValueMapTest, BinaryExprTest) {
       ->mutable_integer_literal()
       ->set_int32_literal(1);
   binary.mutable_rhs()->mutable_value()->mutable_as_variable()->set_name("rhs");
+  binary.mutable_rhs()->mutable_value()->mutable_as_variable()->set_type(GetParam());
 
-  ParameterValueMapExtractor extractor;
+  ParameterValueMapExtractor extractor(GetParam());
   extractor.Extract(binary);
   EXPECT_EQ(extractor.Data(),
             ((zetasql::ParameterValueMap{{"lhs", zetasql::Value::Bytes("TeSt")},
                                          {"rhs", zetasql::Value::Int32(1)}})));
 }
 
-TEST(ParameterValueMapTest, CompoundExprTest) {
+TEST_P(ParameterValueMapExtractorTest, CompoundExprTest) {
   Expression expr;
   expr.mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MULTIPLY);
@@ -88,7 +94,14 @@ TEST(ParameterValueMapTest, CompoundExprTest) {
       ->mutable_value()
       ->mutable_as_variable()
       ->set_name("var1");
+  expr.mutable_expr()
+      ->mutable_binary_operation()
+      ->mutable_lhs()
+      ->mutable_value()
+      ->mutable_as_variable()
+      ->set_type(GetParam());
 
+  ParameterValueMapExtractor extractor(GetParam());
   auto subexpr = std::make_unique<Expression>();
   subexpr->mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MINUS);
@@ -107,6 +120,13 @@ TEST(ParameterValueMapTest, CompoundExprTest) {
       ->set_name("var2");
   subexpr->mutable_expr()
       ->mutable_binary_operation()
+      ->mutable_lhs()
+      ->mutable_value()
+      ->mutable_as_variable()
+      ->set_type(GetParam());
+
+  subexpr->mutable_expr()
+      ->mutable_binary_operation()
       ->mutable_rhs()
       ->mutable_value()
       ->mutable_literal()
@@ -118,10 +138,16 @@ TEST(ParameterValueMapTest, CompoundExprTest) {
       ->mutable_value()
       ->mutable_as_variable()
       ->set_name("var3");
+  subexpr->mutable_expr()
+      ->mutable_binary_operation()
+      ->mutable_rhs()
+      ->mutable_value()
+      ->mutable_as_variable()
+      ->set_type(GetParam());
 
   expr.mutable_expr()->mutable_binary_operation()
-    ->set_allocated_rhs(subexpr.release()); 
-  ParameterValueMapExtractor extractor;
+    ->set_allocated_rhs(subexpr.release());
+
   extractor.Extract(expr);
   zetasql::ParameterValueMap result{
       {"var1", zetasql::Value::StringValue("tEsT")},
@@ -130,19 +156,21 @@ TEST(ParameterValueMapTest, CompoundExprTest) {
   EXPECT_EQ(extractor.Data(), result);
 }
 
-TEST(ParameterValueMapTest, IncrementalTest) {
+TEST_P(ParameterValueMapExtractorTest, IncrementalTest) {
   Expression expr;
-  ParameterValueMapExtractor extractor;
+  ParameterValueMapExtractor extractor(GetParam());
 
   expr.mutable_value()
       ->mutable_literal()
       ->mutable_integer_literal()
       ->set_int32_literal(1);
   expr.mutable_value()->mutable_as_variable()->set_name("var1");
+  expr.mutable_value()->mutable_as_variable()->set_type(GetParam());
   extractor.Extract(expr);
 
   parameter_grammar::Value num_expr;
   num_expr.mutable_as_variable()->set_name("var2");
+  num_expr.mutable_as_variable()->set_type(GetParam());
   num_expr.mutable_literal()->mutable_integer_literal()->set_int32_literal(1234);
   extractor.Extract(num_expr);
 
@@ -152,6 +180,10 @@ TEST(ParameterValueMapTest, IncrementalTest) {
   };
   EXPECT_EQ(extractor.Data(), result);
 }
+
+INSTANTIATE_TEST_SUITE_P(IdentifierTypeTest, ParameterValueMapExtractorTest,
+                         ::testing::Values(Identifier::COLUMN,
+                                           Identifier::PARAMETER));
 
 }  // namespace
 }  // namespace zetasql_fuzzer

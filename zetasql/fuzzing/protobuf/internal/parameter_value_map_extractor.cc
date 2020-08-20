@@ -37,7 +37,7 @@ void ParameterValueMapExtractor::Extract(const zetasql_expression_grammar::Expre
 }
 
 void ParameterValueMapExtractor::Extract(const parameter_grammar::Value& value) {
-  if (value.has_as_variable()) {
+  if (value.has_as_variable() && extract_type_ == value.as_variable().type()) {
     zetasql::Value extracted(LiteralValueExtractor::Extract(value.literal()));
     if (extracted.is_valid()) {
       builder_[value.as_variable().name()] = extracted;
