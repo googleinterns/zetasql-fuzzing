@@ -92,3 +92,23 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ]
 )
+
+cc_library(
+    name = "parameter_value_list_extractor",
+    srcs = [ "parameter_value_list_extractor.cc" ],
+    hdrs = [ "parameter_value_list_extractor.h" ],
+    deps = [
+        ":syntax_tree_visitor",
+        ":literal_value_extractor",
+        "//zetasql/public:evaluator_base"
+    ]
+)
+
+cc_test(
+    name = "parameter_value_list_extractor_test",
+    srcs = [ "parameter_value_list_extractor_test.cc" ],
+    deps = [
+        ":parameter_value_list_extractor",
+        "@com_google_googletest//:gtest_main",
+    ]
+)

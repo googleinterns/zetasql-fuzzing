@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "zetasql/fuzzing/protobuf/internal/parameter_value_map_extractor.h"
+#include "zetasql/fuzzing/protobuf/internal/parameter_value_list_extractor.h"
 
 #include <memory>
 #include <string>
@@ -26,37 +26,36 @@ using parameter_grammar::Identifier;
 using zetasql_expression_grammar::BinaryOperation;
 using zetasql_expression_grammar::CompoundExpr;
 using zetasql_expression_grammar::Expression;
-using zetasql_fuzzer::internal::ParameterValueMapExtractor;
+using zetasql_fuzzer::internal::ParameterValueListExtractor;
 
 namespace zetasql_fuzzer {
 namespace {
 
-class ParameterValueMapExtractorTest : public ::testing::TestWithParam<Identifier::Type> {};
+class ParameterValueListExtractorTest : public ::testing::TestWithParam<Identifier::Type> {};
 
-TEST_P(ParameterValueMapExtractorTest, NonvariableTest) {
+TEST_P(ParameterValueListExtractorTest, NonvariableTest) {
   parameter_grammar::Value value;
   value.clear_as_variable();
   value.mutable_literal()->set_bytes_literal("test");
 
-  ParameterValueMapExtractor extractor(GetParam());
+  ParameterValueListExtractor extractor(GetParam());
   extractor.Extract(value);
-  EXPECT_EQ(extractor.Data(), ((zetasql::ParameterValueMap())));
+  EXPECT_EQ(extractor.Data(), ((zetasql::ParameterValueList())));
 }
 
-TEST_P(ParameterValueMapExtractorTest, VariableTest) {
+TEST_P(ParameterValueListExtractorTest, VariableTest) {
   parameter_grammar::Value value;
   value.mutable_as_variable()->set_name("test_var");
   value.mutable_as_variable()->set_type(GetParam());
   value.mutable_literal()->set_bytes_literal("test");
 
-  ParameterValueMapExtractor extractor(GetParam());
+  ParameterValueListExtractor extractor(GetParam());
   extractor.Extract(value);
   EXPECT_EQ(extractor.Data(),
-            ((zetasql::ParameterValueMap{
-                {"test_var", zetasql::Value::Bytes("test")}})));
+            ((zetasql::ParameterValueList{zetasql::Value::Bytes("test")})));
 }
 
-TEST_P(ParameterValueMapExtractorTest, BinaryExprTest) {
+TEST_P(ParameterValueListExtractorTest, BinaryExprTest) {
   BinaryOperation binary;
   binary.mutable_lhs()->mutable_value()->mutable_as_variable()->set_name("lhs");
   binary.mutable_lhs()->mutable_value()->mutable_as_variable()->set_type(GetParam());
@@ -71,14 +70,14 @@ TEST_P(ParameterValueMapExtractorTest, BinaryExprTest) {
   binary.mutable_rhs()->mutable_value()->mutable_as_variable()->set_name("rhs");
   binary.mutable_rhs()->mutable_value()->mutable_as_variable()->set_type(GetParam());
 
-  ParameterValueMapExtractor extractor(GetParam());
+  ParameterValueListExtractor extractor(GetParam());
   extractor.Extract(binary);
   EXPECT_EQ(extractor.Data(),
-            ((zetasql::ParameterValueMap{{"lhs", zetasql::Value::Bytes("TeSt")},
-                                         {"rhs", zetasql::Value::Int32(1)}})));
+            ((zetasql::ParameterValueList{zetasql::Value::Bytes("TeSt"),
+                                          zetasql::Value::Int32(1)})));
 }
 
-TEST_P(ParameterValueMapExtractorTest, CompoundExprTest) {
+TEST_P(ParameterValueListExtractorTest, CompoundExprTest) {
   Expression expr;
   expr.mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MULTIPLY);
@@ -101,7 +100,7 @@ TEST_P(ParameterValueMapExtractorTest, CompoundExprTest) {
       ->mutable_as_variable()
       ->set_type(GetParam());
 
-  ParameterValueMapExtractor extractor(GetParam());
+  ParameterValueListExtractor extractor(GetParam());
   auto subexpr = std::make_unique<Expression>();
   subexpr->mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MINUS);
@@ -149,16 +148,16 @@ TEST_P(ParameterValueMapExtractorTest, CompoundExprTest) {
     ->set_allocated_rhs(subexpr.release());
 
   extractor.Extract(expr);
-  zetasql::ParameterValueMap result{
-      {"var1", zetasql::Value::StringValue("tEsT")},
-      {"var2", zetasql::Value::Uint64(google::protobuf::kuint64max)},
-      {"var3", zetasql::Value::Int32(google::protobuf::kint32min)}};
+  zetasql::ParameterValueList result{
+      zetasql::Value::StringValue("tEsT"),
+      zetasql::Value::Uint64(google::protobuf::kuint64max),
+      zetasql::Value::Int32(google::protobuf::kint32min)};
   EXPECT_EQ(extractor.Data(), result);
 }
 
-TEST_P(ParameterValueMapExtractorTest, IncrementalTest) {
+TEST_P(ParameterValueListExtractorTest, IncrementalTest) {
   Expression expr;
-  ParameterValueMapExtractor extractor(GetParam());
+  ParameterValueListExtractor extractor(GetParam());
 
   expr.mutable_value()
       ->mutable_literal()
@@ -174,18 +173,18 @@ TEST_P(ParameterValueMapExtractorTest, IncrementalTest) {
   num_expr.mutable_literal()->mutable_integer_literal()->set_int32_literal(1234);
   extractor.Extract(num_expr);
 
-  zetasql::ParameterValueMap result{
-      {"var1", zetasql::Value::Int32(1)},
-      {"var2", zetasql::Value::Int32(1234)},
+  zetasql::ParameterValueList result{
+      zetasql::Value::Int32(1),
+      zetasql::Value::Int32(1234),
   };
   EXPECT_EQ(extractor.Data(), result);
 }
 
-INSTANTIATE_TEST_SUITE_P(IdentifierTypeTest, ParameterValueMapExtractorTest,
+INSTANTIATE_TEST_SUITE_P(IdentifierTypeTest, ParameterValueListExtractorTest,
                          ::testing::Values(Identifier::COLUMN,
                                            Identifier::PARAMETER));
 
-TEST_F(ParameterValueMapExtractorTest, TypeValueTest) {
+TEST_F(ParameterValueListExtractorTest, TypeValueTest) {
   Expression expr;
   auto binary_expr = expr.mutable_expr()->mutable_binary_operation();
   binary_expr->mutable_rhs()->mutable_value()->mutable_as_variable()->set_type(Identifier::COLUMN);
@@ -196,15 +195,15 @@ TEST_F(ParameterValueMapExtractorTest, TypeValueTest) {
   binary_expr->mutable_lhs()->mutable_value()->mutable_as_variable()->set_name("param");
   binary_expr->mutable_lhs()->mutable_value()->mutable_literal()->set_bytes_literal("param1");
 
-  ParameterValueMapExtractor col_extractor(Identifier::COLUMN);
+  ParameterValueListExtractor col_extractor(Identifier::COLUMN);
   col_extractor.Extract(expr);
   EXPECT_EQ(col_extractor.Data(),
-            ((zetasql::ParameterValueMap{{"col", zetasql::Value::Bytes("col1")}})));
+            ((zetasql::ParameterValueList{zetasql::Value::Bytes("col1")})));
 
-  ParameterValueMapExtractor param_extractor(Identifier::PARAMETER);
+  ParameterValueListExtractor param_extractor(Identifier::PARAMETER);
   param_extractor.Extract(expr);
   EXPECT_EQ(param_extractor.Data(),
-            ((zetasql::ParameterValueMap{{"param", zetasql::Value::Bytes("param1")}})));
+            ((zetasql::ParameterValueList{zetasql::Value::Bytes("param1")})));
 }
 
 }  // namespace
