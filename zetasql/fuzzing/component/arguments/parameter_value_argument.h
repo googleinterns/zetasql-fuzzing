@@ -24,32 +24,47 @@ namespace zetasql_fuzzer {
 
 enum ParameterValueAs { COLUMNS, PARAMETERS };
 
-class ParameterValueMapArg : public TypedArg<zetasql::ParameterValueMap> {
+template <typename ArgType>
+class ParameterValueContainerArg : public TypedArg<ArgType> {
  public:
-  ParameterValueMapArg() = delete;
-  ParameterValueMapArg(const ParameterValueMapArg&) = delete;
-  ParameterValueMapArg& operator=(const ParameterValueMapArg&) = delete;
+  ParameterValueContainerArg() = delete;
+  ParameterValueContainerArg(const ParameterValueContainerArg&) = delete;
+  ParameterValueContainerArg& operator=(const ParameterValueContainerArg&) = delete;
 
-  ParameterValueMapArg(ParameterValueMapArg&&) = default;
-  ParameterValueMapArg& operator=(ParameterValueMapArg&&) = default;
+  ParameterValueContainerArg(ParameterValueContainerArg&&) = default;
+  ParameterValueContainerArg& operator=(ParameterValueContainerArg&&) = default;
 
-  ParameterValueMapArg(const zetasql::ParameterValueMap& value, ParameterValueAs intent)
-      : TypedArg(value), intent_(intent) {}
-  ParameterValueMapArg(zetasql::ParameterValueMap&& value, ParameterValueAs intent)
-      : TypedArg(value), intent_(intent) {}
-  ParameterValueMapArg(std::unique_ptr<zetasql::ParameterValueMap> pointer, ParameterValueAs intent)
-      : TypedArg(std::move(pointer)), intent_(intent) {}
+  ParameterValueContainerArg(const ArgType& value, ParameterValueAs intent)
+      : TypedArg<ArgType>(value), intent_(intent) {}
+  ParameterValueContainerArg(ArgType&& value, ParameterValueAs intent)
+      : TypedArg<ArgType>(value), intent_(intent) {}
+  ParameterValueContainerArg(std::unique_ptr<ArgType> pointer, ParameterValueAs intent)
+      : TypedArg<ArgType>(std::move(pointer)), intent_(intent) {}
 
-  virtual ~ParameterValueMapArg() = default;
-
-  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
-    function.Visit(*this);
-  }
+  virtual ~ParameterValueContainerArg() = default;
 
   ParameterValueAs GetIntent() { return intent_; }
 
  private:
   ParameterValueAs intent_;
+};
+
+class ParameterValueMapArg : public ParameterValueContainerArg<zetasql::ParameterValueMap> {
+ public:
+  using ParameterValueContainerArg::ParameterValueContainerArg;
+  virtual ~ParameterValueMapArg() = default;
+  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
+    function.Visit(*this);
+  }
+};
+
+class ParameterValueListArg : public ParameterValueContainerArg<zetasql::ParameterValueList> {
+ public:
+  using ParameterValueContainerArg::ParameterValueContainerArg;
+  virtual ~ParameterValueListArg() = default;
+  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
+    function.Visit(*this);
+  }
 };
 }  // namespace zetasql_fuzzer
 

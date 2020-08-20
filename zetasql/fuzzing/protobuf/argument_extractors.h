@@ -19,8 +19,6 @@
 
 #include "zetasql/fuzzing/component/arguments/argument.h"
 #include "zetasql/fuzzing/component/arguments/parameter_value_argument.h"
-#include "zetasql/fuzzing/protobuf/internal/parameter_value_map_extractor.h"
-#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 namespace zetasql_fuzzer {
@@ -30,6 +28,10 @@ std::unique_ptr<Argument> GetProtoExpr(
 
 template <ParameterValueAs Intent>
 extern std::unique_ptr<Argument> GetParam(
+    const zetasql_expression_grammar::Expression& expression);
+
+template <ParameterValueAs Intent>
+extern std::unique_ptr<Argument> GetPositionalParam(
     const zetasql_expression_grammar::Expression& expression);
 }  // namespace zetasql_fuzzer
 

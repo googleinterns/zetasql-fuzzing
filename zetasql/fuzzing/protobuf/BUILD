@@ -34,6 +34,7 @@ cc_library(
         "//zetasql/fuzzing/component:parameter_value_argument",
         "//zetasql/fuzzing/protobuf/internal:zetasql_expression_extractor",
         "//zetasql/fuzzing/protobuf/internal:parameter_value_map_extractor",
+        "//zetasql/fuzzing/protobuf/internal:parameter_value_list_extractor",
         "//zetasql/base:logging",
     ]
 )

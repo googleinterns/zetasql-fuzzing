@@ -64,6 +64,17 @@ cc_library(
 )
 
 cc_library(
+    name = "prepared_expression_positional_target",
+    srcs = [ "fuzz_targets/prepared_expression_positional_target.cc" ],
+    hdrs = [ "fuzz_targets/prepared_expression_positional_target.h"],
+    deps = [
+        ":fuzz_target",
+        ":parameter_value_argument",
+        "//zetasql/public:evaluator",
+    ]
+)
+
+cc_library(
     name = "runner",
     srcs = [],
     hdrs = [ "runner.h" ],

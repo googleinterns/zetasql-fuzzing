@@ -27,18 +27,21 @@ namespace zetasql_fuzzer {
 
 class SQLStringArg;
 class ParameterValueMapArg;
+class ParameterValueListArg;
 
 class FuzzTarget {
  public:
   virtual ~FuzzTarget() = default;
   virtual void Visit(SQLStringArg& arg) { AbortVisit("SQLStringArg&"); }
   virtual void Visit(ParameterValueMapArg& arg) { AbortVisit("ParameterValueMapArg&"); }
+  virtual void Visit(ParameterValueListArg& arg) { AbortVisit("ParameterValueListArg&"); }
   virtual void Execute() = 0;
 
  protected:
-  static const zetasql::ParameterValueMap& GetOrDefault(
-      const std::unique_ptr<zetasql::ParameterValueMap>& ptr) {
-    static const zetasql::ParameterValueMap DEFAULT_VALUE_MAP;
+  template <typename T>
+  static const T& GetOrDefault(
+      const std::unique_ptr<T>& ptr) {
+    static const T DEFAULT_VALUE_MAP;
     return ptr ? *ptr : DEFAULT_VALUE_MAP;
   }
 

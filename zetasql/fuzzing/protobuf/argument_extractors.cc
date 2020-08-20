@@ -17,6 +17,9 @@
 #include "zetasql/fuzzing/protobuf/argument_extractors.h"
 
 #include "zetasql/base/logging.h"
+#include "zetasql/fuzzing/protobuf/internal/parameter_value_list_extractor.h"
+#include "zetasql/fuzzing/protobuf/internal/parameter_value_map_extractor.h"
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
 namespace zetasql_fuzzer {
 
@@ -53,5 +56,18 @@ std::unique_ptr<Argument> GetParam(
 template std::unique_ptr<Argument> GetParam<ParameterValueAs::COLUMNS>(
     const zetasql_expression_grammar::Expression& expression);
 template std::unique_ptr<Argument> GetParam<ParameterValueAs::PARAMETERS>(
+    const zetasql_expression_grammar::Expression& expression);
+
+template <ParameterValueAs Intent>
+std::unique_ptr<Argument> GetPositionalParam(
+    const zetasql_expression_grammar::Expression& expression) {
+  zetasql_fuzzer::internal::ParameterValueListExtractor extractor(GetType(Intent));
+  extractor.Extract(expression);
+  return std::make_unique<ParameterValueListArg>(extractor.Data(), Intent);
+}
+
+template std::unique_ptr<Argument> GetPositionalParam<ParameterValueAs::COLUMNS>(
+    const zetasql_expression_grammar::Expression& expression);
+template std::unique_ptr<Argument> GetPositionalParam<ParameterValueAs::PARAMETERS>(
     const zetasql_expression_grammar::Expression& expression);
 }  // namespace zetasql_fuzzer
