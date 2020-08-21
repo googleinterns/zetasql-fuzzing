@@ -23,6 +23,9 @@
 namespace zetasql_fuzzer {
 namespace internal {
 
+// Defines a Protobuf encoded SQL syntax tree visitor that collects
+// all variables of parameter_grammar::Identifier::Type type 
+// in the syntax tree to a zetasql::ParameterValueMap
 class ParameterValueMapExtractor : public ProtoExprExtractor<zetasql::ParameterValueMap> {
  public:
   ParameterValueMapExtractor() = delete;

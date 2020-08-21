@@ -23,6 +23,13 @@
 #include "zetasql/base/logging.h"
 #include "zetasql/public/evaluator_base.h"
 
+// FuzzTarget defines an abstraction for any ZetaSQL API to be fuzzed; it 
+// encapsulates the logic of setting up call to ZetaSQL API given correct arguments
+// During fuzzing, arguments of the API call can be extracted by visiting 
+// available zetasql_fuzzer::Argument.
+//
+// FuzzTarget is a Visitor to zetasql_fuzzer::Argument
+
 namespace zetasql_fuzzer {
 
 class SQLStringArg;
@@ -41,14 +48,14 @@ class FuzzTarget {
   template <typename T>
   static const T& GetOrDefault(
       const std::unique_ptr<T>& ptr) {
-    static const T DEFAULT_VALUE_MAP;
-    return ptr ? *ptr : DEFAULT_VALUE_MAP;
+    static const T DEFAULT_VALUE;
+    return ptr ? *ptr : DEFAULT_VALUE;
   }
 
  private:
   void AbortVisit(const std::string& type) {
     LOG(FATAL) << "#Visit(" << type
-              << ") not implemented. Instantiate this method in the subclass";
+              << ") not implemented. Instantiate this method in the FuzzTarget subclass";
   }
 };
 

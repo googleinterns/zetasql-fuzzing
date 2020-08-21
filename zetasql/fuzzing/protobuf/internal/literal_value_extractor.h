@@ -23,6 +23,8 @@
 namespace zetasql_fuzzer {
 namespace internal {
 
+// Helper methods for converting subtypes of parameter_grammar::Literal
+// to zetasql::Value
 namespace LiteralValueExtractor {
 zetasql::Value Extract(const parameter_grammar::Literal& literal);
 zetasql::Value Extract(const parameter_grammar::IntegerLiteral& integer);

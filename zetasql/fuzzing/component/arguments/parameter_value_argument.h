@@ -20,6 +20,11 @@
 #include "zetasql/fuzzing/component/arguments/argument.h"
 #include "zetasql/public/evaluator_base.h"
 
+// Defines argument containers for parameter values extracted from input in zetasql_fuzzer::Run,
+// and used by zetasql::Evaluator;
+// See zetasql/public/evaluator_base.h for usage of ParameterValueMap and ParameterValueList,
+// See zetasql/fuzzing/component/arguments/argument.h for definition of zetasql_fuzzer::Argument
+
 namespace zetasql_fuzzer {
 
 enum ParameterValueAs { COLUMNS, PARAMETERS };

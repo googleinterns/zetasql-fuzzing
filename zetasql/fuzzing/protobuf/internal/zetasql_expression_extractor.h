@@ -25,6 +25,8 @@
 namespace zetasql_fuzzer {
 namespace internal {
 
+// Defines a Protobuf encoded SQL syntax tree visitor that converts
+// the syntax tree to a SQL expression statement string
 class SQLExprExtractor : public ProtoExprExtractor<std::string>,
                          public LiteralExtractor<std::string> {
  public:
@@ -43,6 +45,7 @@ class SQLExprExtractor : public ProtoExprExtractor<std::string>,
   inline const std::string& Data() override { return builder_; };
 
  protected:
+  // Extract default content of an unset Protobuf one_of struct
   template <typename T>
   inline void ExtractDefault(const T& expr) {
     Append(expr.default_value().content());

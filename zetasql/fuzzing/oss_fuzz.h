@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-// Utilities for OSS-Fuzz Initialization
-
+// Deprecated with zetasql_expression_fuzzer. See new implementaiton in 
+// zetasql/fuzzing/component/runner.h Don't use.
 #if defined(__OSS_FUZZ__) && !defined(ZETASQL_FUZZING_OSS_FUZZ_H_)
 #define ZETASQL_FUZZING_OSS_FUZZ_H_
 

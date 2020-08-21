@@ -19,6 +19,8 @@
 
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
+// Deprecated with zetasql_expression_fuzzer. Don't use
+
 using zetasql_expression_grammar::Expression;
 
 namespace zetasql_fuzzer {
