@@ -24,7 +24,7 @@ Specifically, FAIR is short for
 - <a id='arg'>`Argument`</a>, an abstraction for any value that is extracted from the fuzzing input of `InputType` in `zetasql_fuzzer::Run` routine, and is to be applied to some `zetasql_fuzzer::FuzzTarget` in a fuzzing test. It is a Visitable to `zetasql::FuzzTarget`.
   - `Extractor`, a function that can extract some `Argument` from an input of `InputType`. The <a id='sig'>signature</a> should be compatible to `std::function<std::unique_ptr<zetasql_fuzzer::Argument>(const InputType&)>`
 - `Input`, an abstraction for any input passed into `zetasql_fuzzer::Run` routine. Current implementation uses template for various input type.
-- `Runner`, an abstraction for fuzzing test routine. Currently implemented as `zetasql_fuzzer::Run`.
+- `Runner`, an abstraction for **engine-agnostic** fuzzing test routine. Currently implemented as `zetasql_fuzzer::Run`. See [The macro and Runner](#the-macro-and-runner) for correct use. 
 
 ### How to use FAIR?
 
@@ -59,7 +59,11 @@ ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionTarget, GetProtoExpr,
 
 The code looks intimidating, but really what it does is that `ZETASQL_PROTO_FUZZER` takes the first argument as the `InputType` (i.e., we declare the current fuzzer input is of type `Expression`), the second argument as the concrete subclass of `FuzzTarget`, and all the rest as `Extractor`s, compatible to defined [type signature](#sig).
 
-Under the hood, these two macros instantiated the fuzz target interface for `libfuzzer` and LPM respectively, and invoke `zetasql_fuzzer::Run` in the instantiation, with test input of either `std::string` in `ZETASQL_SIMPLE_FUZZER` or the supplied type (e.g., `Expression`) in `ZETASQL_PROTO_FUZZER`. See also [input](#the-input) section for more detail about using different types of inputs.
+Under the hood, these macros instantiate the fuzz target interface for `libfuzzer` and LPM respectively, and then invoke `zetasql_fuzzer::Run` in the instantiation, with test input of either `std::string` in `ZETASQL_SIMPLE_FUZZER` or the supplied type (e.g., `Expression`) in `ZETASQL_PROTO_FUZZER`. See also [input](#the-input) section for more detail about using different types of inputs.
+
+The point of `zetasql_fuzzer::Run` being engine agnostic is that we want to separate the engine setup from fuzzing test logic, so that the latter can be reused in different engine in the future. As a result, however, `zetasql_fuzzer::Run` **must** be used inside an interface provided by a fuzzing engine. Using a macro is therefore recommended to avoid the hassle of learning engine interface. 
+
+Addtionally, there can be **exactly one** engine interface (therefore, one macro) be instantiated per fuzzing test. This is because every fuzzing test will be compiled into a standalone binary. Declaring two or more fuzzing tests in a fuzzer source file causes compilation error. 
 
 #### The Fuzz Target
 
