@@ -28,7 +28,7 @@ Specifically, FAIR is short for
 
 ### How to use FAIR?
 
-#### The macro
+#### The macro and Runner
 
 Let's study `simple_evaluator_fuzzer.cc` and `pipelined_expression_fuzzer.cc` as examples. To declare a fuzzer in ZetaSQL, developer should first include `fuzzer_macro.h`, then either choose `ZETASQL_SIMPLE_FUZZER` macro for fuzzing raw test inputs as strings, or `ZETASQL_PROTO_FUZZER` macro for fuzzing structure-aware with LPM interface. 
 
@@ -59,6 +59,8 @@ ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionTarget, GetProtoExpr,
 
 The code looks intimidating, but really what it does is that `ZETASQL_PROTO_FUZZER` takes the first argument as the `InputType` (i.e., we declare the current fuzzer input is of type `Expression`), the second argument as the concrete subclass of `FuzzTarget`, and all the rest as `Extractor`s, compatible to defined [type signature](#sig).
 
+Under the hood, these two macros instantiated the fuzz target interface for `libfuzzer` and LPM respectively, and invoke `zetasql_fuzzer::Run` in the instantiation, with test input of either `std::string` in `ZETASQL_SIMPLE_FUZZER` or the supplied type (e.g., `Expression`) in `ZETASQL_PROTO_FUZZER`. See also [input](#the-input) section for more detail about using different types of inputs.
+
 #### The Fuzz Target
 
 So what is the `PreparedExpressionTarget`? Let's take a look at `component/fuzz_targets/fuzz_target.h` first.
@@ -73,7 +75,7 @@ class FuzzTarget {
   virtual void Execute() = 0;
 ```
 
-As defined earlier, FuzzTarget is an abstraction for any ZetaSQL API to be fuzzed. `PreparedExpressionTarget` is really just a concrete subclass of `FuzzTarget` that knows how to execute `PreparedExpression::Execute` function. Now take a look at the implementation of `PreparedExpressionTarget`,
+As defined earlier, FuzzTarget is an abstraction for any ZetaSQL API to be fuzzed. In a declared fuzzer with FAIR, a `FuzzTarget` object will be instantiated and executed after all available `Argument`s have been visited. `PreparedExpressionTarget` is really just a concrete subclass of `FuzzTarget` that knows how to execute `PreparedExpression::Execute` function. Now take a look at the implementation of `PreparedExpressionTarget`,
 
 ```c++
 // component/fuzz_targetsprepared_expression_target.h
@@ -105,7 +107,7 @@ void PreparedExpressionTarget::Execute() {
 }
 ```
 
-We see that the PreparedExpressionTarget knows exactly how to get the argument value from available `zetasql_fuzzer::Argument`, and how to execute the fuzzed API. Additionally, notice that `PreparedExpressionTarget` doesn't override `#Visit(ParameterValueListArg& arg)` function. This means that it doesn't know how to get the argument, because the underlying calls never need it! This is convenient because `FuzzTarget.h` provides a default implementation, so we don't need to handle arguments irrelavant of the fuzzed API. If an unhandled argument is accidentally introduced, the program will crash and complain so we know that we set up the fuzzer incorrectly. 
+We see that the `PreparedExpressionTarget` knows exactly how to get the argument value from available `zetasql_fuzzer::Argument`, and how to execute the fuzzed API. Additionally, notice that `PreparedExpressionTarget` doesn't override `#Visit(ParameterValueListArg& arg)` function. This means that it doesn't know how to get the argument, because the underlying calls never need it! This is convenient because `FuzzTarget.h` provides a default implementation, so we don't need to handle arguments irrelavant of the fuzzed API. If an unhandled argument is accidentally introduced, the program will crash and complain so we know that we set up the fuzzer incorrectly. 
 
 #### The Argument & Extractors
 
@@ -142,11 +144,13 @@ class SQLStringArg : public TypedArg<std::string> {
 };
 ```
 
-`Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
+`Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer.cc`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
 
 #### Input
 
-#### Runner
+Test input are currently directly feeded into `zetasql_fuzzer:Run` with parameterized `InputType` type. As such, input itself must be a single object of `InputType`, and is compatible with the signature type of supplied `Extractor`s. We have two options for test input as of now: `std::string` input that wraps directly the raw test bytes array from `libfuzzer` engine, or defined proto messages in `protobuf/parameter_grammar.proto` or `protobuf/zetasql_expression_grammar.proto`. See [macro](#the-macro-and-runner) section for how to use wire up these two kinds of fuzzers. 
+
+To accomondate for new kinds of input, `InputType` definition and/or necessary argument `Extractor` should be supplied. If the input is neither of simple wrapper of the raw bytes, or some protobuf message, new macros may be required to correctly wire up correctly the desired input, fuzzing engine interface, and `zetasql_fuzzer::Run` interface together. We recommend readers to model after code in `fuzzer_macro.h` in this situation. For extending new protobuf message input, see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing)
 
 ## LPM Backend for Structure-aware Fuzzing
 
