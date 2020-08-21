@@ -2,7 +2,7 @@
 
 ## Code Deprecation and Notes
 
-As part of the experimental code, `zetasql_expression_fuzzer.cc` has been replaced by `pipelined_expression_fuzzer.cc` but with FAIR library integration. `zetasql_expression_fuzzer.cc` and its dependencies existed only for existing bug reproduction. Future developer should model after `pipelined_expression_fuzzer.cc` for correct use of FAIR library.
+As part of the experimental code, `zetasql_expression_fuzzer.cc` has been replaced by `pipelined_expression_fuzzer.cc` but with FAIR library integration. `zetasql_expression_fuzzer.cc` and its dependencies exists only for existing bug reproduction. Future developer should model after `pipelined_expression_fuzzer.cc` for correct use of FAIR library.
 
 The current Bazel build dependency isn't exactly at its finest, and combining with `fuzzer_macro.h`, every fuzzer will be compiled with `libprotobuf-mutator` dependency whether it's defined as a `cc_proto_fuzzer` or `cc_fuzzer`. Effort to separate the dependency is welcomed.
 
