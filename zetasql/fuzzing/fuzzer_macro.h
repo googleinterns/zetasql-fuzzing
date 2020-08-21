@@ -24,11 +24,15 @@
 #include "libprotobuf_mutator/src/libfuzzer/libfuzzer_macro.h"
 #include "zetasql/fuzzing/component/runner.h"
 
+// Defines a fuzzer with input of InputType, extracted by 
+// __VA_ARGS__ of argument extractors, and applied to the fuzz target of TargetType.
 #define ZETASQL_PROTO_FUZZER(InputType, TargetType, ...)            \
   DEFINE_PROTO_FUZZER(const InputType& input) {                     \
     zetasql_fuzzer::Run<InputType, TargetType>(input, __VA_ARGS__); \
   }
 
+// Defines a fuzzer with input interpreted as a string, extracted by 
+// __VA_ARGS__ of argument extractors, and applied to the fuzz target of TargetType.
 #define ZETASQL_SIMPLE_FUZZER(TargetType, ...)                              \
   extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) { \
     const std::string input(reinterpret_cast<const char*>(Data), Size);     \

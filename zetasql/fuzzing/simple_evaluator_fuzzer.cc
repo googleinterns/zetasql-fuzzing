@@ -23,7 +23,5 @@
 using zetasql_fuzzer::PreparedExpressionTarget;
 using zetasql_fuzzer::SQLStringArg;
 
-// This functions interprets raw fuzzing input as a SQL string, which will be
-// applied to PreparedExpressionTarget
 ZETASQL_SIMPLE_FUZZER(PreparedExpressionTarget,
                       std::make_unique<SQLStringArg, const std::string&>);

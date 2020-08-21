@@ -20,6 +20,10 @@
 #include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
+// Includes abstract base Visitor class for Protobuf encoded SQL syntax tree.
+// See zetasql_expression_grammar.proto and parameter_grammar.proto for 
+// syntax tree definition.
+
 namespace zetasql_fuzzer {
 namespace internal {
 

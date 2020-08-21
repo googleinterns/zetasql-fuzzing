@@ -20,6 +20,8 @@
 #include "zetasql/fuzzing/protobuf/parameter_grammar.pb.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
+// Deprecated with zetasql_expression_fuzzer. Don't use
+
 using zetasql_expression_grammar::Expression;
 using parameter_grammar::Literal;
 using parameter_grammar::IntegerLiteral;

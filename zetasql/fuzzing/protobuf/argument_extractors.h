@@ -23,13 +23,16 @@
 
 namespace zetasql_fuzzer {
 
+// Extracts a pointer to zetasql_fuzzer::SQLStringArg from expression.
 std::unique_ptr<Argument> GetProtoExpr(
     const zetasql_expression_grammar::Expression& expression);
 
+// Extracts a pointer to zetasql_fuzzer::ParameterValueMapArg from expression.
 template <ParameterValueAs Intent>
 extern std::unique_ptr<Argument> GetParam(
     const zetasql_expression_grammar::Expression& expression);
 
+// Extracts a pointer to zetasql_fuzzer::ParameterValueListArg from expression.
 template <ParameterValueAs Intent>
 extern std::unique_ptr<Argument> GetPositionalParam(
     const zetasql_expression_grammar::Expression& expression);

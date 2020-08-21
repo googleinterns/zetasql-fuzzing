@@ -22,6 +22,7 @@
 
 using zetasql_expression_grammar::Expression;
 
+// Deprecated by pipelined_expression_fuzzer. Don't use.
 DEFINE_PROTO_FUZZER(const Expression& expression) {
     #ifdef __OSS_FUZZ__
       static bool Initialized = zetasql_fuzzer::DoOssFuzzInit();

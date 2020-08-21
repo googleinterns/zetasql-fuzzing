@@ -23,8 +23,15 @@
 #include "zetasql/base/statusor.h"
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
+// Argument defines an abstraction for any value that is extracted from 
+// the fuzzing input of InputType in zetasql_fuzzer::Run function,
+// and is to be applied to some zetasql_fuzzer::FuzzTarget in a fuzzing test.
+//
+// Argument is a Visitable to zetasql_fuzzer::FuzzTarget
+
 namespace zetasql_fuzzer {
 
+// Defines a type-erased abstract base class
 class Argument {
  public:
   virtual ~Argument() = default;
@@ -33,6 +40,7 @@ class Argument {
   virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
 };
 
+// Defines a move-only template argument container holding value of ArgType
 template <typename ArgType>
 class TypedArg : public Argument {
  public:
@@ -61,6 +69,8 @@ class TypedArg : public Argument {
   std::unique_ptr<ArgType> argument_;
 };
 
+// Defines an argument container for extracted SQL statement string 
+// from input of InputType in zetasql_fuzzer::Run
 class SQLStringArg : public TypedArg<std::string> {
  public:
   using TypedArg::TypedArg;

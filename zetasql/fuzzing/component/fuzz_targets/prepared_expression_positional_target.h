@@ -21,6 +21,7 @@
 
 namespace zetasql_fuzzer {
 
+// Defines encapsulation of zetasql::PreparedExpression::ExecuteWithPositionalParams API
 class PreparedExpressionPositionalTarget : public FuzzTarget {
  public:
   void Visit(SQLStringArg& sql) override;

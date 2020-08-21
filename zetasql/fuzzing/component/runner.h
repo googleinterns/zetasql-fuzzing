@@ -30,6 +30,9 @@
 namespace zetasql_fuzzer {
 
 #ifdef __OSS_FUZZ__
+// Configure timezone data dependency for ZetaSQL runtime in OSS-Fuzz 
+// docker environment, which doesn't have tzdata dependency installed.
+// See also https://github.com/google/oss-fuzz/pull/4010
 bool DoOssFuzzInit() {
   namespace fs = std::filesystem;
   static const int OVERWRITE = 1;
@@ -48,6 +51,7 @@ bool DoOssFuzzInit() {
 }
 #endif  // __OSS_FUZZ__
 
+// Defines the driver function for ZetaSQL fuzzing tests
 template <typename InputType, typename TargetType, typename... Functions>
 void Run(const InputType& input, Functions... functions) {
 #ifdef __OSS_FUZZ__
