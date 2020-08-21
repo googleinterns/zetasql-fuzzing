@@ -30,7 +30,7 @@ Specifically, FAIR is short for
 
 #### The macro and Runner
 
-Let's study `simple_evaluator_fuzzer.cc` and `pipelined_expression_fuzzer.cc` as examples. To declare a fuzzer in ZetaSQL, developer should first include `fuzzer_macro.h`, then either choose `ZETASQL_SIMPLE_FUZZER` macro for fuzzing raw test inputs as strings, or `ZETASQL_PROTO_FUZZER` macro for fuzzing structure-aware with LPM interface. 
+Let's study `simple_evaluator_fuzzer.cc` and `pipelined_expression_fuzzer.cc` as examples. To declare a fuzzer in ZetaSQL, developer should first include `fuzzer_macro.h`, then either choose `ZETASQL_SIMPLE_FUZZER` macro for fuzzing raw test inputs as strings, or `ZETASQL_PROTO_FUZZER` macro for fuzzing structure-aware with LPM interface (see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing)). 
 
 In `simple_evaluator_fuzzer.cc`, we have 
 
@@ -158,7 +158,7 @@ To accomondate for new kinds of input, `InputType` definition and/or necessary a
 
 ## LPM Backend for Structure-aware Fuzzing
 
-ZetaSQL Fuzzing project chooses Libprotobuf-mutator [(LPM)](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md#protocol-buffers-as-intermediate-format) as the structure aware fuzzing infrastructure. As a short introduction, Google protobuf messages provides a nice way to represent data encoding schema and LPM takes advantage of it by parsing fuzzing inputs into some protobuf message, and mutating only the content of the protobuf message. As the user of LPM, we only need to decode the protobuf correctly (i.e., extract useful data following the defined schema) to perform structure aware fuzzing. This approach aligns fairly well with representing and mutating SQL abstract syntax tree (AST). 
+ZetaSQL Fuzzing project uses Libprotobuf-mutator [(LPM)](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md#protocol-buffers-as-intermediate-format) as the structure aware fuzzing infrastructure. As a short introduction, Google protobuf messages provides a nice way to represent data encoding schema and LPM takes advantage of it by parsing fuzzing inputs into some protobuf message, and mutating only the content of the protobuf message. As the user of LPM, we only need to decode the protobuf correctly (i.e., extract useful data following the defined schema) to perform structure aware fuzzing. This approach aligns fairly well with representing and mutating SQL abstract syntax tree (AST). 
 
 ### Input
 
@@ -166,4 +166,35 @@ LPM supplies defined protobuf message as argument to the declared fuzz targets. 
 
 ### Argument Extractors
 
-`protobuf/argument_extractors.h` provides a comprehensive list of `Extractor`s currently supported. 
+`protobuf/argument_extractors.h` provides a comprehensive list of `zetasql_fuzzer::Extractor`s currently supported. Internally they use implementations of `zetasql_fuzzer::internal::ProtoExprExtractor` or `zetasql_fuzzer::internal::LiteralExtractor` in `protobuf/internal/syntax_tree_visitor.h` that defines helper classes to correctly extract encoded data from protobuf message, such as the SQL statement string or parameter values. `protobuf/internal/` directory curates all implementations of `zetasql_fuzzer::internal::Extractor` interfaces.
+
+```c++
+template <typename Result>
+class Extractor {
+ public:
+  virtual ~Extractor() = default;
+  virtual const Result& Data() = 0;
+};
+
+template <typename Result>
+class LiteralExtractor : public Extractor<Result> {
+ public:
+  virtual ~LiteralExtractor() = default;
+  virtual void Extract(const parameter_grammar::Literal& literal) = 0;
+  virtual void Extract(const parameter_grammar::IntegerLiteral& integer) = 0;
+  virtual void Extract(const parameter_grammar::NumericLiteral& numeric) = 0;
+};
+
+template <typename Result>
+class ProtoExprExtractor : public Extractor<Result> {
+ public:
+  virtual ~ProtoExprExtractor() = default;
+
+  virtual void Extract(const parameter_grammar::Value& value) = 0;
+  virtual void Extract(const zetasql_expression_grammar::Expression& expr) = 0;
+  virtual void Extract(const zetasql_expression_grammar::CompoundExpr& comp_expr) = 0;
+  virtual void Extract(const zetasql_expression_grammar::BinaryOperation& binary_operation) = 0;
+};
+```
+
+Notice that `zetasql_fuzzer::internal::Extractor` is different from `zetasql_fuzzer::Extractor`, the latter uses the former as the implementation dependency to actually extract the `zetasql_fuzzer::Argument` from any protobuf message.
