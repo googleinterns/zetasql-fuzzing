@@ -14,25 +14,26 @@
 // limitations under the License.
 //
 
-#ifndef ZETASQL_FUZZING_PREPARED_EXPRESSION_TARGET_H
-#define ZETASQL_FUZZING_PREPARED_EXPRESSION_TARGET_H
+#ifndef ZETASQL_FUZZING_PREPARED_EXPRESSION_POSITIONAL_TARGET_H
+#define ZETASQL_FUZZING_PREPARED_EXPRESSION_POSITIONAL_TARGET_H
 
 #include "zetasql/fuzzing/component/fuzz_targets/fuzz_target.h"
 
 namespace zetasql_fuzzer {
 
-class PreparedExpressionTarget : public FuzzTarget {
+class PreparedExpressionPositionalTarget : public FuzzTarget {
  public:
   void Visit(SQLStringArg& sql) override;
   void Visit(ParameterValueMapArg& arg) override;
+  void Visit(ParameterValueListArg& arg) override;
   void Execute() override;
 
  private:
   std::unique_ptr<std::string> sql_expression_;
   std::unique_ptr<zetasql::ParameterValueMap> columns_;
-  std::unique_ptr<zetasql::ParameterValueMap> parameters_;
+  std::unique_ptr<zetasql::ParameterValueList> parameters_;
 };
 
 }  // namespace zetasql_fuzzer
 
-#endif  // ZETASQL_FUZZING_PREPARED_EXPRESSION_TARGET_H
+#endif  // ZETASQL_FUZZING_PREPARED_EXPRESSION_POSITIONAL_TARGET_H

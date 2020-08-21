@@ -27,6 +27,8 @@ namespace zetasql_fuzzer {
 
 class Argument {
  public:
+  virtual ~Argument() = default;
+
   // Accepts a FuzzTarget as a Visitor to this Argument
   virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
 };
@@ -41,22 +43,22 @@ class TypedArg : public Argument {
   TypedArg(TypedArg<ArgType>&&) = default;
   TypedArg& operator=(TypedArg<ArgType>&&) = default;
 
-  TypedArg(const ArgType& value) : argument(std::make_unique<ArgType>(value)) {}
-  TypedArg(ArgType&& value) : argument(std::make_unique<ArgType>(value)) {}
-  TypedArg(std::unique_ptr<ArgType>&& pointer) : argument(std::move(pointer)) {}
+  TypedArg(const ArgType& value) : argument_(std::make_unique<ArgType>(value)) {}
+  TypedArg(ArgType&& value) : argument_(std::make_unique<ArgType>(value)) {}
+  TypedArg(std::unique_ptr<ArgType> pointer) : argument_(std::move(pointer)) {}
 
   virtual ~TypedArg() = default;
 
   zetasql_base::StatusOr<std::unique_ptr<ArgType>> Release() {
-    if (argument) {
-      return std::move(argument);
+    if (argument_) {
+      return std::move(argument_);
     }
     return absl::NotFoundError(
         "Argument is either not set or has been released.");
   }
 
  private:
-  std::unique_ptr<ArgType> argument;
+  std::unique_ptr<ArgType> argument_;
 };
 
 class SQLStringArg : public TypedArg<std::string> {
@@ -66,7 +68,6 @@ class SQLStringArg : public TypedArg<std::string> {
     function.Visit(*this);
   }
 };
-
 }  // namespace zetasql_fuzzer
 
 #endif  // ZETASQL_FUZZING_ARGUMENT_H

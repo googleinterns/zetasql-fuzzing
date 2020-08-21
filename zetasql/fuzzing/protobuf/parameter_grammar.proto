@@ -16,6 +16,8 @@
 
 syntax = "proto2";
 
+import "zetasql/public/type.proto";
+
 package parameter_grammar;
 
 message Whitespace {
@@ -31,4 +33,45 @@ message Whitespace {
 
 message Default {
     required bytes content = 1;
+}
+
+message Identifier {
+    enum Type {
+        COLUMN = 0;
+        PARAMETER = 1;
+    }
+    required bytes name = 1;
+    required Type type = 2;
+}
+
+message Value {
+    required Literal literal = 1;
+    optional Identifier as_variable = 2;
+}
+
+message Literal {
+    oneof literal_oneof {
+        zetasql.TypeKind null_literal = 1;
+        bool bool_literal = 2;
+        string string_literal = 3;
+        bytes bytes_literal = 4;
+        IntegerLiteral integer_literal = 5;
+        NumericLiteral numeric_literal = 6;
+    }
+    required Default default_value = 7;
+}
+
+message IntegerLiteral {
+    oneof integer_oneof {
+        int32 int32_literal = 1;
+        uint32 uint32_literal = 2;
+        int64 int64_literal = 3;
+        uint64 uint64_literal = 4;
+    }
+    required Default default_value = 5;
+}
+
+// TODO: Support high precision value representation
+message NumericLiteral {
+    required bytes value = 1;
 }

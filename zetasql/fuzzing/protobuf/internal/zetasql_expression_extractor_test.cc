@@ -14,33 +14,35 @@
 // limitations under the License.
 //
 
+#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
+
 #include <memory>
 #include <string>
 #include <tuple>
-#include <google/protobuf/text_format.h>
+#include <optional>
 
-#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 #include "gtest/gtest.h"
+#include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
+#include "zetasql/public/type.h"
 
-using zetasql_expression_grammar::Expression;
-using zetasql_expression_grammar::LiteralExpr;
-using zetasql_expression_grammar::IntegerLiteral;
-using zetasql_expression_grammar::NumericLiteral;
-using zetasql_expression_grammar::CompoundExpr;
-using zetasql_expression_grammar::BinaryOperation;
+using parameter_grammar::IntegerLiteral;
+using parameter_grammar::Literal;
+using parameter_grammar::NumericLiteral;
 using parameter_grammar::Whitespace;
-using zetasql_fuzzer::internal::ProtoExprExtractor;
+using zetasql_expression_grammar::BinaryOperation;
+using zetasql_expression_grammar::CompoundExpr;
+using zetasql_expression_grammar::Expression;
+using zetasql_fuzzer::internal::SQLExprExtractor;
 
 namespace zetasql_fuzzer {
 namespace {
 
-using InvokeExtractCallback = std::function<void(ProtoExprExtractor&)>;
+using InvokeExtractCallback = std::function<void(SQLExprExtractor&)>;
 class ProtoExprExtractorTest
     : public ::testing::TestWithParam<
           std::tuple<InvokeExtractCallback, std::string>> {
  protected:
-  ProtoExprExtractor extractor;
+  SQLExprExtractor extractor;
 };
 
 // Parameterized Test
@@ -52,7 +54,7 @@ TEST_P(ProtoExprExtractorTest, ExtractTest) {
 
 template <typename ExprType>
 InvokeExtractCallback ExtractableEmptyExpression() {
-  return [](ProtoExprExtractor& extractor) {
+  return [](SQLExprExtractor& extractor) {
     ExprType expression;
     extractor.Extract(expression);
   };
@@ -60,15 +62,16 @@ InvokeExtractCallback ExtractableEmptyExpression() {
 
 INSTANTIATE_TEST_SUITE_P(
     EmptyExpressionTest, ProtoExprExtractorTest,
-    ::testing::Values(
-        std::make_tuple(ExtractableEmptyExpression<Expression>(), ""),
-        std::make_tuple(ExtractableEmptyExpression<LiteralExpr>(), ""),
-        std::make_tuple(ExtractableEmptyExpression<IntegerLiteral>(), ""),
-        std::make_tuple(ExtractableEmptyExpression<CompoundExpr>(), "")));
+    ::testing::Combine(
+        ::testing::Values(ExtractableEmptyExpression<Expression>(),
+                          ExtractableEmptyExpression<Literal>(),
+                          ExtractableEmptyExpression<IntegerLiteral>(),
+                          ExtractableEmptyExpression<CompoundExpr>()),
+        ::testing::Values("")));
 
 template <typename ExprType>
 InvokeExtractCallback ExtractableDefaultValue(const std::string& value) {
-  return [value](ProtoExprExtractor& extractor) {
+  return [value](SQLExprExtractor& extractor) {
     ExprType expression;
     expression.mutable_default_value()->set_content(value);
     extractor.Extract(expression);
@@ -80,7 +83,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
         std::make_tuple(ExtractableDefaultValue<Expression>("default"),
                         "default"),
-        std::make_tuple(ExtractableDefaultValue<LiteralExpr>("default_lit"),
+        std::make_tuple(ExtractableDefaultValue<Literal>("default_lit"),
                         "default_lit"),
         std::make_tuple(ExtractableDefaultValue<IntegerLiteral>("default_int"),
                         "default_int"),
@@ -89,8 +92,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 InvokeExtractCallback ExtractableStringLiteral(
     const std::string& value) {
-  return [value](ProtoExprExtractor& extractor) {
-    LiteralExpr expr;
+  return [value](SQLExprExtractor& extractor) {
+    Literal expr;
     expr.set_string_literal(value);
     extractor.Extract(expr);
   };
@@ -103,8 +106,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 InvokeExtractCallback ExtractableBytesLiteral(
     const std::string& value) {
-  return [value](ProtoExprExtractor& extractor) {
-    LiteralExpr expr;
+  return [value](SQLExprExtractor& extractor) {
+    Literal expr;
     expr.set_bytes_literal(value);
     extractor.Extract(expr);
   };
@@ -117,22 +120,31 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple(ExtractableBytesLiteral("TeSt"), "B\"TeSt\""),
         std::make_tuple(ExtractableBytesLiteral("\x01\x02"), "B\"\x01\x02\"")));
 
-InvokeExtractCallback ExtractableSpecialLiteral(const zetasql_expression_grammar::LiteralExpr_SpecialValue& value) {
-  return [value](ProtoExprExtractor& extractor) {
-    LiteralExpr expression;
-    expression.set_special_literal(value);
+InvokeExtractCallback ExtractableSpecialLiteral(const zetasql::TypeKind& null_type) {
+  return [null_type](SQLExprExtractor& extractor) {
+    Literal expression;
+    expression.set_null_literal(null_type);
     extractor.Extract(expression);
   };
 }
 
+const std::vector<InvokeExtractCallback> ExtractableNullLiterals() {
+  std::vector<InvokeExtractCallback> callbacks;
+  auto* descriptor = zetasql::TypeKind_descriptor();
+  for (int i = 0; i < descriptor->value_count(); i++) {
+    callbacks.push_back(ExtractableSpecialLiteral(
+        static_cast<zetasql::TypeKind>(descriptor->value(i)->number())));
+  }
+  return callbacks;
+}
+
 INSTANTIATE_TEST_SUITE_P(
-    SpecialLiteralTest, ProtoExprExtractorTest,
-    ::testing::Values(
-        std::make_tuple(ExtractableSpecialLiteral(LiteralExpr::V_NULL), "NULL")));
+    NullLiteralTest, ProtoExprExtractorTest,
+    ::testing::Combine(::testing::ValuesIn(ExtractableNullLiterals()), ::testing::Values("NULL")));
 
 template <IntegerLiteral::IntegerOneofCase IntegerType, typename T>
 InvokeExtractCallback ExtractableIntegerLiteral(const T& value) {
-  return [value](ProtoExprExtractor& extractor) {
+  return [value](SQLExprExtractor& extractor) {
     IntegerLiteral expression;
     switch (IntegerType) {
       case IntegerLiteral::kInt32Literal:
@@ -178,7 +190,7 @@ INSTANTIATE_TEST_SUITE_P(
 );
 
 InvokeExtractCallback ExtractableNumeric(const std::string& value) {
-  return [value](ProtoExprExtractor& extractor) {
+  return [value](SQLExprExtractor& extractor) {
     NumericLiteral expression;
     expression.set_value(value);
     extractor.Extract(expression);
@@ -200,8 +212,33 @@ void InsertWhitespaceHelper(Whitespace& expression, const std::vector<Whitespace
   }
 }
 
+InvokeExtractCallback ExtractableValue(
+    const std::string& content, std::optional<std::string> identifier,
+    std::optional<parameter_grammar::Identifier::Type> type) {
+  return [content, identifier, type](SQLExprExtractor& extractor) {
+    parameter_grammar::Value value;
+    if (identifier) {
+      value.mutable_as_variable()->set_name(*identifier);
+      value.mutable_as_variable()->set_type(*type);
+    } else {
+      value.clear_as_variable();
+    }
+    value.mutable_literal()->mutable_default_value()->set_content(content);
+    extractor.Extract(value);
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ValueTest, ProtoExprExtractorTest,
+    ::testing::Values(
+        std::make_tuple(ExtractableValue("is column", "var1", parameter_grammar::Identifier::COLUMN), "var1"),
+        std::make_tuple(ExtractableValue("is literal", {}, {}), "is literal"),
+        std::make_tuple(ExtractableValue("is parameter", "var2", parameter_grammar::Identifier::PARAMETER), "@var2")
+    )
+);
+
 InvokeExtractCallback ExtractableWhitespaces(const std::vector<Whitespace::Type>& value) {
-  return [value](ProtoExprExtractor& extractor) {
+  return [value](SQLExprExtractor& extractor) {
     Whitespace expression;
     InsertWhitespaceHelper(expression, value);
     extractor.Extract(expression);
@@ -223,7 +260,7 @@ InvokeExtractCallback ExtractableParenthesis(
     const std::string& value, bool parenthesized,
     const std::vector<Whitespace::Type>& leading_space,
     const std::vector<Whitespace::Type>& trailing_space) {
-  return [value, parenthesized, leading_space, trailing_space](ProtoExprExtractor& extractor) {
+  return [value, parenthesized, leading_space, trailing_space](SQLExprExtractor& extractor) {
     Expression expr;
     expr.mutable_default_value()->set_content(value);
     expr.set_parenthesized(parenthesized);
@@ -248,6 +285,7 @@ TEST_F(ProtoExprExtractorTest, BinaryExprTest) {
   binary.set_op(BinaryOperation::PLUS);
   binary.mutable_right_pad()->set_space(Whitespace::NEWLINE);
   binary.mutable_rhs()
+      ->mutable_value()
       ->mutable_literal()
       ->mutable_integer_literal()
       ->set_int32_literal(1);
@@ -260,18 +298,30 @@ TEST_F(ProtoExprExtractorTest, CompoundExprTest) {
   Expression expr;
   expr.mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MULTIPLY);
-  expr.mutable_expr()->mutable_binary_operation()
-    ->mutable_lhs()->mutable_literal()->set_string_literal("tEsT");
+  expr.mutable_expr()
+      ->mutable_binary_operation()
+      ->mutable_lhs()
+      ->mutable_value()
+      ->mutable_literal()
+      ->set_string_literal("tEsT");
 
   auto subexpr = std::make_unique<Expression>();
   subexpr->mutable_expr()->mutable_binary_operation()
     ->set_op(BinaryOperation::MINUS);
-  subexpr->mutable_expr()->mutable_binary_operation()
-    ->mutable_lhs()->mutable_literal()->mutable_integer_literal()
-    ->set_uint64_literal(google::protobuf::kuint64max);
-  subexpr->mutable_expr()->mutable_binary_operation()
-    ->mutable_rhs()->mutable_literal()->mutable_integer_literal()
-    ->set_int32_literal(google::protobuf::kint32min);
+  subexpr->mutable_expr()
+      ->mutable_binary_operation()
+      ->mutable_lhs()
+      ->mutable_value()
+      ->mutable_literal()
+      ->mutable_integer_literal()
+      ->set_uint64_literal(google::protobuf::kuint64max);
+  subexpr->mutable_expr()
+      ->mutable_binary_operation()
+      ->mutable_rhs()
+      ->mutable_value()
+      ->mutable_literal()
+      ->mutable_integer_literal()
+      ->set_int32_literal(google::protobuf::kint32min);
 
   expr.mutable_expr()->mutable_binary_operation()
     ->set_allocated_rhs(subexpr.release()); 
@@ -281,9 +331,12 @@ TEST_F(ProtoExprExtractorTest, CompoundExprTest) {
 
 TEST_F(ProtoExprExtractorTest, IncrementalTest) {
   Expression expr;
-  ProtoExprExtractor extractor;
+  SQLExprExtractor extractor;
 
-  expr.mutable_literal()->mutable_integer_literal()->set_int32_literal(1);
+  expr.mutable_value()
+      ->mutable_literal()
+      ->mutable_integer_literal()
+      ->set_int32_literal(1);
   extractor.Extract(expr);
 
   NumericLiteral num_expr;

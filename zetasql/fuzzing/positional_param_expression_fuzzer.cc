@@ -14,17 +14,18 @@
 // limitations under the License.
 //
 
-#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
+#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_positional_target.h"
 #include "zetasql/fuzzing/fuzzer_macro.h"
 #include "zetasql/fuzzing/protobuf/argument_extractors.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
 
 using zetasql_expression_grammar::Expression;
 using zetasql_fuzzer::GetParam;
+using zetasql_fuzzer::GetPositionalParam;
 using zetasql_fuzzer::GetProtoExpr;
-using zetasql_fuzzer::PreparedExpressionTarget;
+using zetasql_fuzzer::PreparedExpressionPositionalTarget;
 
 using As = zetasql_fuzzer::ParameterValueAs;
 
-ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionTarget, GetProtoExpr,
-                     GetParam<As::COLUMNS>, GetParam<As::PARAMETERS>);
+ZETASQL_PROTO_FUZZER(Expression, PreparedExpressionPositionalTarget, GetProtoExpr,
+                     GetParam<As::COLUMNS>, GetPositionalParam<As::PARAMETERS>);

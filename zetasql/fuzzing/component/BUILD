@@ -26,9 +26,20 @@ cc_library(
     hdrs = [ 
         "fuzz_targets/fuzz_target.h",
         "arguments/argument.h",
-        "//zetasql/base:logging",
-        "//zetasql/base:statusor"
     ],
+    deps = [
+        "//zetasql/base:logging",
+        "//zetasql/base:statusor",
+        "//zetasql/public:evaluator_base"
+    ]
+)
+
+cc_library(
+    name = "parameter_value_argument",
+    hdrs = [ "arguments/parameter_value_argument.h" ],
+    deps = [
+        ":fuzz_target",
+    ]
 )
 
 cc_test(
@@ -47,6 +58,18 @@ cc_library(
     hdrs = [ "fuzz_targets/prepared_expression_target.h"],
     deps = [
         ":fuzz_target",
+        ":parameter_value_argument",
+        "//zetasql/public:evaluator",
+    ]
+)
+
+cc_library(
+    name = "prepared_expression_positional_target",
+    srcs = [ "fuzz_targets/prepared_expression_positional_target.cc" ],
+    hdrs = [ "fuzz_targets/prepared_expression_positional_target.h"],
+    deps = [
+        ":fuzz_target",
+        ":parameter_value_argument",
         "//zetasql/public:evaluator",
     ]
 )

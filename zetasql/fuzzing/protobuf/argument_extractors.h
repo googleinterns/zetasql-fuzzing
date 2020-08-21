@@ -18,17 +18,21 @@
 #define ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H
 
 #include "zetasql/fuzzing/component/arguments/argument.h"
+#include "zetasql/fuzzing/component/arguments/parameter_value_argument.h"
 #include "zetasql/fuzzing/protobuf/zetasql_expression_grammar.pb.h"
-#include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
 namespace zetasql_fuzzer {
 
-std::unique_ptr<Argument> GetProtoExpr(const zetasql_expression_grammar::Expression& expression) {
-  zetasql_fuzzer::internal::ProtoExprExtractor extractor;
-  extractor.Extract(expression);
-  return std::make_unique<SQLStringArg>(extractor.Data());
-}
+std::unique_ptr<Argument> GetProtoExpr(
+    const zetasql_expression_grammar::Expression& expression);
 
+template <ParameterValueAs Intent>
+extern std::unique_ptr<Argument> GetParam(
+    const zetasql_expression_grammar::Expression& expression);
+
+template <ParameterValueAs Intent>
+extern std::unique_ptr<Argument> GetPositionalParam(
+    const zetasql_expression_grammar::Expression& expression);
 }  // namespace zetasql_fuzzer
 
 #endif  //ZETASQL_FUZZING_ARGUMENT_EXTRACTORS_H

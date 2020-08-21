@@ -21,15 +21,29 @@
 #include <string>
 
 #include "zetasql/base/logging.h"
+#include "zetasql/public/evaluator_base.h"
 
 namespace zetasql_fuzzer {
 
 class SQLStringArg;
+class ParameterValueMapArg;
+class ParameterValueListArg;
 
 class FuzzTarget {
  public:
+  virtual ~FuzzTarget() = default;
   virtual void Visit(SQLStringArg& arg) { AbortVisit("SQLStringArg&"); }
+  virtual void Visit(ParameterValueMapArg& arg) { AbortVisit("ParameterValueMapArg&"); }
+  virtual void Visit(ParameterValueListArg& arg) { AbortVisit("ParameterValueListArg&"); }
   virtual void Execute() = 0;
+
+ protected:
+  template <typename T>
+  static const T& GetOrDefault(
+      const std::unique_ptr<T>& ptr) {
+    static const T DEFAULT_VALUE_MAP;
+    return ptr ? *ptr : DEFAULT_VALUE_MAP;
+  }
 
  private:
   void AbortVisit(const std::string& type) {

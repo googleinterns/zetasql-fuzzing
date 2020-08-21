@@ -26,11 +26,16 @@ package(
 
 cc_library(
     name = "argument_extractors",
+    srcs = [ "argument_extractors.cc" ],
     hdrs = [ "argument_extractors.h", ],
     deps = [
         ":zetasql_expression_cc_proto",
         "//zetasql/fuzzing/component:fuzz_target",
+        "//zetasql/fuzzing/component:parameter_value_argument",
         "//zetasql/fuzzing/protobuf/internal:zetasql_expression_extractor",
+        "//zetasql/fuzzing/protobuf/internal:parameter_value_map_extractor",
+        "//zetasql/fuzzing/protobuf/internal:parameter_value_list_extractor",
+        "//zetasql/base:logging",
     ]
 )
 
@@ -38,7 +43,6 @@ cc_test(
     name = "zetasql_expression_proto_to_string_test",
     srcs = ["zetasql_expression_proto_to_string_test.cc"],
     deps = [
-        ":zetasql_expression_cc_proto",
         ":zetasql_expression_proto_to_string",
         "@com_google_googletest//:gtest_main",
     ],
@@ -59,13 +63,21 @@ cc_proto_library(
     deps = [ ":zetasql_expression_proto", ],
 )
 
+cc_proto_library(
+    name = "parameter_cc_proto",
+    deps = [ ":parameter_proto"],
+)
+
 proto_library(
     name = "zetasql_expression_proto",
     srcs = [ "zetasql_expression_grammar.proto", ],
-    deps = [ ":parameter_proto", ]
+    deps = [ 
+        ":parameter_proto", 
+    ]
 )
 
 proto_library(
     name = "parameter_proto",
-    srcs = [ "parameter_grammar.proto", ]
+    srcs = [ "parameter_grammar.proto", ],
+    deps = [ "//zetasql/public:type_proto" ]
 )

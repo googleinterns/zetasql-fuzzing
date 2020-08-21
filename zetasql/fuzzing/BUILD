@@ -68,3 +68,14 @@ cc_proto_fuzzer(
         "//zetasql/fuzzing/protobuf:argument_extractors",
     ]
 )
+
+cc_proto_fuzzer(
+    name = "positional_param_expression_fuzzer",
+    srcs = [ "positional_param_expression_fuzzer.cc" ],
+    additional_deps = [
+        ":fuzzer_macro",
+        "//zetasql/fuzzing/component:prepared_expression_positional_target",
+        "//zetasql/fuzzing/protobuf:zetasql_expression_cc_proto",
+        "//zetasql/fuzzing/protobuf:argument_extractors",
+    ]
+)

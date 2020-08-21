@@ -16,24 +16,29 @@
 
 #include "zetasql/fuzzing/protobuf/internal/zetasql_expression_extractor.h"
 
-using zetasql_expression_grammar::Expression;
-using zetasql_expression_grammar::LiteralExpr;
-using zetasql_expression_grammar::NumericLiteral;
-using zetasql_expression_grammar::IntegerLiteral;
+#include "zetasql/base/logging.h"
+
+using parameter_grammar::Identifier;
+using parameter_grammar::IntegerLiteral;
+using parameter_grammar::Literal;
+using parameter_grammar::NumericLiteral;
+using parameter_grammar::Value;
+using parameter_grammar::Whitespace;
 using zetasql_expression_grammar::BinaryOperation;
 using zetasql_expression_grammar::CompoundExpr;
-using parameter_grammar::Whitespace;
+using zetasql_expression_grammar::Expression;
 
 namespace zetasql_fuzzer {
 namespace internal {
 
-inline void ProtoExprExtractor::Quote(const std::string& content, const std::string& quote) {
+inline void SQLExprExtractor::Quote(const std::string& content,
+                                      const std::string& quote) {
   Append(quote);
   Append(content);
   Append(quote);
 }
 
-void ProtoExprExtractor::Extract(const Expression& expr) {
+void SQLExprExtractor::Extract(const Expression& expr) {
   using ExprType = Expression::ExprOneofCase;
   if (expr.parenthesized()) {
     Append("(");
@@ -41,10 +46,10 @@ void ProtoExprExtractor::Extract(const Expression& expr) {
       Extract(expr.leading_pad());
     }
   }
-  
+
   switch (expr.expr_oneof_case()) {
-    case ExprType::kLiteral:
-      Extract(expr.literal());
+    case ExprType::kValue:
+      Extract(expr.value());
       break;
     case ExprType::kExpr:
       Extract(expr.expr());
@@ -62,33 +67,50 @@ void ProtoExprExtractor::Extract(const Expression& expr) {
   }
 }
 
-void ProtoExprExtractor::Extract(const LiteralExpr& literal) {
-  using LitExprType = LiteralExpr::LiteralOneofCase;
+void SQLExprExtractor::Extract(const Identifier& id) {
+  switch (id.type()) {
+    case Identifier::COLUMN:
+      break;
+    case Identifier::PARAMETER:
+      Append("@");
+      break;
+    default:
+      LOG(FATAL) <<
+          "Unhandled Identifier Formatting. Please update SQLExprExtractor "
+          "implementaion";
+  }
+  Append(id.name());
+}
+
+void SQLExprExtractor::Extract(const Value& value) {
+  if (value.has_as_variable()) {
+    return Extract(value.as_variable());
+  }
+
+  return Extract(value.literal());
+}
+
+void SQLExprExtractor::Extract(const Literal& literal) {
   switch (literal.literal_oneof_case()) {
-    case LitExprType::kSpecialLiteral:
-      switch (literal.special_literal()) {
-        case LiteralExpr::V_NULL:
-          return Append("NULL");
-        default:
-          Exit("Unhandled Special Literal. Please update Extractor implementation");
-      }
-    case LitExprType::kBoolLiteral:
+    case Literal::kNullLiteral:
+      return Append("NULL");
+    case Literal::kBoolLiteral:
       return Append(literal.bool_literal() ? "TRUE" : "FALSE");
-    case LitExprType::kBytesLiteral:
+    case Literal::kBytesLiteral:
       Append("B");
       return Quote(literal.bytes_literal(), "\"");
-    case LitExprType::kStringLiteral:
+    case Literal::kStringLiteral:
       return Quote(literal.string_literal(), "\"");
-    case LitExprType::kIntegerLiteral:
+    case Literal::kIntegerLiteral:
       return Extract(literal.integer_literal());
-    case LitExprType::kNumericLiteral:
+    case Literal::kNumericLiteral:
       return Extract(literal.numeric_literal());
     default:
       return ExtractDefault(literal);
   }
 }
 
-void ProtoExprExtractor::Extract(const IntegerLiteral& integer) {
+void SQLExprExtractor::Extract(const IntegerLiteral& integer) {
   using IntergerType = IntegerLiteral::IntegerOneofCase;
   switch (integer.integer_oneof_case()) {
     case IntergerType::kInt32Literal:
@@ -104,12 +126,12 @@ void ProtoExprExtractor::Extract(const IntegerLiteral& integer) {
   }
 }
 
-void ProtoExprExtractor::Extract(const NumericLiteral& numeric) {
+void SQLExprExtractor::Extract(const NumericLiteral& numeric) {
   Append("NUMERIC ");
   return Quote(numeric.value(), "'");
 }
 
-void ProtoExprExtractor::Extract(const CompoundExpr& comp_expr) {
+void SQLExprExtractor::Extract(const CompoundExpr& comp_expr) {
   using CompoundExprType = CompoundExpr::CompoundOneofCase;
   switch (comp_expr.compound_oneof_case()) {
     case CompoundExprType::kBinaryOperation:
@@ -120,7 +142,7 @@ void ProtoExprExtractor::Extract(const CompoundExpr& comp_expr) {
 }
 
 using zetasql_expression_grammar::BinaryOperation_Operator;
-inline void ProtoExprExtractor::ExtractBinaryOperator(
+inline void SQLExprExtractor::ExtractBinaryOperator(
     const BinaryOperation_Operator binary) {
   switch (binary) {
     case BinaryOperation::PLUS:
@@ -132,11 +154,12 @@ inline void ProtoExprExtractor::ExtractBinaryOperator(
     case BinaryOperation::DIVIDE:
       return Append("/");
     default:
-      Exit("Unhandled Binary Operation. Please update Extractor implementation");
+      LOG(FATAL) <<
+          "Unhandled Binary Operation. Please update Extractor implementation";
   }
 }
 
-void ProtoExprExtractor::Extract(const BinaryOperation& binary_operation) {
+void SQLExprExtractor::Extract(const BinaryOperation& binary_operation) {
   using zetasql_expression_grammar::BinaryOperation_Operator;
   Extract(binary_operation.lhs());
   Extract(binary_operation.left_pad());
@@ -146,7 +169,7 @@ void ProtoExprExtractor::Extract(const BinaryOperation& binary_operation) {
 }
 
 using parameter_grammar::Whitespace_Type;
-inline void ProtoExprExtractor::ExtractWhitespaceCharacter(
+inline void SQLExprExtractor::ExtractWhitespaceCharacter(
     const Whitespace_Type whitespace) {
   switch (whitespace) {
     case Whitespace::SPACE:
@@ -158,11 +181,13 @@ inline void ProtoExprExtractor::ExtractWhitespaceCharacter(
     case Whitespace::NEWLINE:
       return Append("\n");
     default:
-      Exit("Unhandled Whitespace Character. Please update Extractor implementation");
+      LOG(FATAL) <<
+          "Unhandled Whitespace Character. Please update Extractor "
+          "implementation";
   }
 }
 
-void ProtoExprExtractor::Extract(const Whitespace& whitespaces) {
+void SQLExprExtractor::Extract(const Whitespace& whitespaces) {
   using parameter_grammar::Whitespace_Type;
   ExtractWhitespaceCharacter(whitespaces.space());
   for (const auto& additional_space : whitespaces.additional()) {

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_target.h"
+#include "zetasql/fuzzing/component/fuzz_targets/prepared_expression_positional_target.h"
 
 #include "zetasql/base/logging.h"
 #include "zetasql/fuzzing/component/arguments/argument.h"
@@ -23,30 +23,38 @@
 
 namespace zetasql_fuzzer {
 
-void PreparedExpressionTarget::Visit(SQLStringArg& arg) {
+void PreparedExpressionPositionalTarget::Visit(SQLStringArg& arg) {
   sql_expression_ = arg.Release().ValueOrDie();
 }
 
-void PreparedExpressionTarget::Visit(ParameterValueMapArg& arg) {
+void PreparedExpressionPositionalTarget::Visit(ParameterValueMapArg& arg) {
   switch (arg.GetIntent()) {
     case ParameterValueAs::COLUMNS:
       columns_ = arg.Release().ValueOrDie();
       return;
+    default:
+      LOG(FATAL)
+          << "Unhandled ParameterValueMapArg in PreparedExpressionPositionalTarget";
+  }
+}
+
+void PreparedExpressionPositionalTarget::Visit(ParameterValueListArg& arg) {
+  switch (arg.GetIntent()) {
     case ParameterValueAs::PARAMETERS:
       parameters_ = arg.Release().ValueOrDie();
       return;
     default:
       LOG(FATAL)
-          << "Unhandled ParameterValueMapArg in PreparedExpressionTarget";
+          << "Unhandled ParameterValueListArg in PreparedExpressionPositionalTarget";
   }
 }
 
-void PreparedExpressionTarget::Execute() {
+void PreparedExpressionPositionalTarget::Execute() {
   if (!sql_expression_) {
     LOG(FATAL) << "SQL expression not found";
   }
   zetasql::PreparedExpression expression(*sql_expression_);
-  expression.Execute(GetOrDefault(columns_), GetOrDefault(parameters_));
+  expression.ExecuteWithPositionalParams(GetOrDefault(columns_), GetOrDefault(parameters_));
 }
 
 }  // namespace zetasql_fuzzer
