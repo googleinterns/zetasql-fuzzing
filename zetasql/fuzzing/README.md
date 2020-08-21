@@ -146,11 +146,11 @@ class SQLStringArg : public TypedArg<std::string> {
 
 `Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer.cc`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
 
-#### Input
+#### The Input
 
 Test input are currently directly feeded into `zetasql_fuzzer:Run` with parameterized `InputType` type. As such, input itself must be a single object of `InputType`, and is compatible with the signature type of supplied `Extractor`s. We have two options for test input as of now: `std::string` input that wraps directly the raw test bytes array from `libfuzzer` engine, or defined proto messages in `protobuf/parameter_grammar.proto` or `protobuf/zetasql_expression_grammar.proto`. See [macro](#the-macro-and-runner) section for how to use wire up these two kinds of fuzzers. 
 
-To accomondate for new kinds of input, `InputType` definition and/or necessary argument `Extractor` should be supplied. If the input is neither of simple wrapper of the raw bytes, or some protobuf message, new macros may be required to correctly wire up correctly the desired input, fuzzing engine interface, and `zetasql_fuzzer::Run` interface together. We recommend readers to model after code in `fuzzer_macro.h` in this situation. For extending new protobuf message input, see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing)
+To accomondate for new kinds of input, `InputType` definition and/or necessary argument `Extractor` should be supplied. If the input is neither of simple wrapper of the raw bytes, or some protobuf message, new macros may be required to correctly wire up correctly the desired input, fuzzing engine interface, and `zetasql_fuzzer::Run` interface together. We recommend readers to model after code in `fuzzer_macro.h` in this situation. For using or extending new protobuf message input, see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing)
 
 ## LPM Backend for Structure-aware Fuzzing
 
