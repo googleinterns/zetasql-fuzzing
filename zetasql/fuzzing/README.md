@@ -132,6 +132,14 @@ class TypedArg : public Argument {
  private:
   std::unique_ptr<ArgType> argument_;
 };
+
+class SQLStringArg : public TypedArg<std::string> {
+ public:
+  using TypedArg::TypedArg;
+  void Accept(zetasql_fuzzer::FuzzTarget& function) override {
+    function.Visit(*this);
+  }
+};
 ```
 
 `Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
