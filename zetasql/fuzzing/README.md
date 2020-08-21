@@ -105,7 +105,7 @@ void PreparedExpressionTarget::Execute() {
 }
 ```
 
-We see that the PreparedExpressionTarget knows exactly how to get the argument value from available `zetasql_fuzzer::Argument`, and how to execute the fuzzed API. Additionally, notice that `PreparedExpressionTarget` doesn't override `#Visit(ParameterValueListArg& arg)` function. This means that it doesn't know how to get the argument, because the underlying calls never need it! This is convienient because `FuzzTarget.h` provides a default implementation, so we don't need to handle arguments irrelavant of the fuzzed API. If an unhandled argument is accidentally introduced, the program will crash and complain so we know that we set up the fuzzer incorrectly. 
+We see that the PreparedExpressionTarget knows exactly how to get the argument value from available `zetasql_fuzzer::Argument`, and how to execute the fuzzed API. Additionally, notice that `PreparedExpressionTarget` doesn't override `#Visit(ParameterValueListArg& arg)` function. This means that it doesn't know how to get the argument, because the underlying calls never need it! This is convenient because `FuzzTarget.h` provides a default implementation, so we don't need to handle arguments irrelavant of the fuzzed API. If an unhandled argument is accidentally introduced, the program will crash and complain so we know that we set up the fuzzer incorrectly. 
 
 #### The Argument & Extractors
 
