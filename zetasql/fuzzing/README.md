@@ -18,7 +18,7 @@ The documentation also assumes that readers are comfortable working with [Bazel]
 
 Fuzzers defined in ZetaSQL project currently have a mixed usage of both native `libfuzzer` interface for primitive fuzzing, as well as Libprotobuf-mutator [(LPM)](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md#protocol-buffers-as-intermediate-format) interface for structure aware fuzzing. Additionally, many fuzzers behave in fairly similar ways that they all extract some arguments from the test input and apply them to the tested API. FAIR library deconstructs general fuzzers into four components and helps increase code reuse through composition.
 
-Specifically, FAIR is short for 
+Specifically, FAIR is short for:
 
 - `zetasql_fuzzer::FuzzTarget`, an abstraction for any ZetaSQL APIs to be fuzzed. It encapsulates the logic of setting up calls to ZetaSQL APIs given correct arguments. During fuzzing, `zetasql_fuzzer::FuzzTarget` gets arguments for the API calls by visiting available `zetasql_fuzzer::Argument`s. `zetasql_fuzzer::FuzzTarget` is a Visitor to `zetasql_fuzzer::Argument`.
 - <a id='arg'>`zetasql_fuzzer::Argument`</a>, an abstraction for any value that is extracted from the fuzzing input of `InputType` in `zetasql_fuzzer::Run` routine, and is to be applied to some `zetasql_fuzzer::FuzzTarget` in a fuzzing test. It is a Visitable to `zetasql::FuzzTarget`.
