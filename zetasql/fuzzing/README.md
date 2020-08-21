@@ -21,7 +21,7 @@ Fuzzers defined in ZetaSQL project currently has a mixed usage of both native li
 Specifically, FAIR is short for 
 
 - `FuzzTarget`, an abstraction for any ZetaSQL API to be fuzzed. It encapsulates the logic of setting up calls to ZetaSQL API given correct arguments. During fuzzing, arguments of the API calls can be extracted by visiting available `zetasql_fuzzer::Argument`. It is a Visitor to `zetasql_fuzzer::Argument`.
-- `Argument`, an abstraction for any value that is extracted from the fuzzing input of `InputType` in `zetasql_fuzzer::Run` routine, and is to be applied to some `zetasql_fuzzer::FuzzTarget` in a fuzzing test. It is a Visitable to `zetasql::FuzzTarget`.
+- <a id='arg'>`Argument`</a>, an abstraction for any value that is extracted from the fuzzing input of `InputType` in `zetasql_fuzzer::Run` routine, and is to be applied to some `zetasql_fuzzer::FuzzTarget` in a fuzzing test. It is a Visitable to `zetasql::FuzzTarget`.
   - `Extractor`, a function that can extract some `Argument` from an input of `InputType`. The <a id='sig'>signature</a> should be compatible to `std::function<std::unique_ptr<zetasql_fuzzer::Argument>(const InputType&)>`
 - `Input`, an abstraction for any input passed into `zetasql_fuzzer::Run` routine. Current implementation uses template for various input type.
 - `Runner`, an abstraction for fuzzing test routine. Currently implemented as `zetasql_fuzzer::Run`.
@@ -76,7 +76,7 @@ class FuzzTarget {
 As defined earlier, FuzzTarget is an abstraction for any ZetaSQL API to be fuzzed. `PreparedExpressionTarget` is really just a concrete subclass of `FuzzTarget` that knows how to execute `PreparedExpression::Execute` function. Now take a look at the implementation of `PreparedExpressionTarget`,
 
 ```c++
-// prepared_expression_target.h
+// component/fuzz_targetsprepared_expression_target.h
 class PreparedExpressionTarget : public FuzzTarget {
  public:
   void Visit(SQLStringArg& sql) override;
@@ -89,7 +89,7 @@ class PreparedExpressionTarget : public FuzzTarget {
   std::unique_ptr<zetasql::ParameterValueMap> parameters_;
 };
 
-// prepared_expression_target.cc
+// component/fuzz_targetsprepared_expression_target.cc
 void PreparedExpressionTarget::Visit(SQLStringArg& arg) {
   sql_expression_ = arg.Release().ValueOrDie();
 }
@@ -106,3 +106,39 @@ void PreparedExpressionTarget::Execute() {
 ```
 
 We see that the PreparedExpressionTarget knows exactly how to get the argument value from available `zetasql_fuzzer::Argument`, and how to execute the fuzzed API. Additionally, notice that `PreparedExpressionTarget` doesn't override `#Visit(ParameterValueListArg& arg)` function. This means that it doesn't know how to get the argument, because the underlying calls never need it! This is convienient because `FuzzTarget.h` provides a default implementation, so we don't need to handle arguments irrelavant of the fuzzed API. If an unhandled argument is accidentally introduced, the program will crash and complain so we know that we set up the fuzzer incorrectly. 
+
+#### The Argument & Extractors
+
+According to the [defintion](#arg), `Argument`s are essentially value containers used by `FuzzTarget`. However, `Argument` is not aware of test input directly, but relies on `Extractor`s to do the translation work. As such, the modularization between `FuzzTarget` and `Extractor`s is guaranteed, so that `FuzzTarget` can be mix-and-matched with `Extractor`s for different inputs as long the resulting argument is compatible.  
+
+```c++
+class Argument {
+ public:
+  ...
+  virtual void Accept(zetasql_fuzzer::FuzzTarget& function) = 0;
+};
+
+template <typename ArgType>
+class TypedArg : public Argument {
+ public:
+  ...
+  TypedArg(const ArgType& value) : argument_(std::make_unique<ArgType>(value)) {}
+  TypedArg(ArgType&& value) : argument_(std::make_unique<ArgType>(value)) {}
+  TypedArg(std::unique_ptr<ArgType> pointer) : argument_(std::move(pointer)) {}
+
+  ...
+  zetasql_base::StatusOr<std::unique_ptr<ArgType>> Release();
+
+ private:
+  std::unique_ptr<ArgType> argument_;
+};
+```
+
+`Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
+
+#### Input
+
+#### Runner
+
+## LPM Backend for Structure-aware Fuzzing
+
