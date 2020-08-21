@@ -12,7 +12,7 @@ The current Bazel build dependency isn't exactly at its finest, and combining wi
 
 This documentation assumes that readers know how to correctly configure ZetaSQL project and would like to know how to contribute to ZetaSQL fuzzing specifically. Developers who don't have background of Fuzzing Tests or OSS-Fuzz are suggested to take quick tutorials [here](https://github.com/google/fuzzing/blob/master/tutorial/libFuzzerTutorial.md) and [here](https://google.github.io/oss-fuzz/). More references are at the end of this page. For googlers, please refer to evmaus@ for links to presentation of ZetaSQL fuzzing introduction.
 
-The documentation also assumes that reader is comfortable working with [Bazel](https://bazel.build/), and reading `BUILD` file. Since the compilation detail is too remotely related to library itself, we will not go over how to set up build correctly, but to refer readers to the example `BUILD` files.
+The documentation also assumes that readers are comfortable working with [Bazel](https://bazel.build/), and reading `BUILD` file. Since the compilation detail is too remotely related to library itself, we will not go over how to set up build correctly, but to refer readers to the example `BUILD` files.
 
 ### What is FAIR?
 
@@ -148,13 +148,22 @@ class SQLStringArg : public TypedArg<std::string> {
 };
 ```
 
-`Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer.cc`. For LPM based structure aware fuzzer, we refer readers to `protobuf/argument_extractors.h` for a comprehensive list of `Extractor`s currently supported. Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
+`Argument` is implemented as a type-erased container, and combined with Visitor pattern, `Argument` yields great flexibility for both `FuzzTarget` and `Extractor`. `Extractor` can be as simple as `std::make_unique<SQLStringArg, const std::string&>` in the case of `simple_evaluator_fuzzer.cc`, or as complicated as `GetParam<As::PARAMETERS>` in `piplined_expression_fuzzer.cc`. For LPM based structure aware fuzzer, see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing). Supporting more `Extractor` and `Argument` should be fairly easy by modeling after current implementation, but can also flexible due to little constraints in the type signature. 
 
 #### The Input
 
-Test input are currently directly feeded into `zetasql_fuzzer:Run` with parameterized `InputType` type. As such, input itself must be a single object of `InputType`, and is compatible with the signature type of supplied `Extractor`s. We have two options for test input as of now: `std::string` input that wraps directly the raw test bytes array from `libfuzzer` engine, or defined proto messages in `protobuf/parameter_grammar.proto` or `protobuf/zetasql_expression_grammar.proto`. See [macro](#the-macro-and-runner) section for how to use wire up these two kinds of fuzzers. 
+Test input are currently directly feeded into `zetasql_fuzzer:Run` with parameterized `InputType` type. As such, input itself must be a single object of `InputType`, and is compatible with the signature type of supplied `Extractor`s. We have two options for test input as of now: `std::string` input that wraps directly the raw test bytes array from `libfuzzer` engine, or defined proto messages. See [macro](#the-macro-and-runner) section for how to use wire up these two kinds of fuzzers. 
 
 To accomondate for new kinds of input, `InputType` definition and/or necessary argument `Extractor` should be supplied. If the input is neither of simple wrapper of the raw bytes, or some protobuf message, new macros may be required to correctly wire up correctly the desired input, fuzzing engine interface, and `zetasql_fuzzer::Run` interface together. We recommend readers to model after code in `fuzzer_macro.h` in this situation. For using or extending new protobuf message input, see [LPM Backend for Structure-aware Fuzzing](#lpm-backend-for-structure-aware-fuzzing)
 
 ## LPM Backend for Structure-aware Fuzzing
 
+ZetaSQL Fuzzing project chooses Libprotobuf-mutator [(LPM)](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md#protocol-buffers-as-intermediate-format) as the structure aware fuzzing infrastructure. As a short introduction, Google protobuf messages provides a nice way to represent data encoding schema and LPM takes advantage of it by parsing fuzzing inputs into some protobuf message, and mutating only the content of the protobuf message. As the user of LPM, we only need to decode the protobuf correctly (i.e., extract useful data following the defined schema) to perform structure aware fuzzing. This approach aligns fairly well with representing and mutating SQL abstract syntax tree (AST). 
+
+### Input
+
+LPM supplies defined protobuf message as argument to the declared fuzz targets. As explained earlier, the message type (i.e., class) should be specified in `ZETASQL_PROTO_FUZZER` as the first argument. Doing so tells the engine what message type to use for this fuzz test.  Currently supported AST structures are binary arithmetic expressions with arbitrary literals or variable (as column or parameter), defined in `protobuf/zetasql_expression_grammar.proto` and `protobuf/parameter_grammar.proto`. Future extension on SQL language feature can model after current solution.
+
+### Argument Extractors
+
+`protobuf/argument_extractors.h` provides a comprehensive list of `Extractor`s currently supported. 
